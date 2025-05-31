@@ -1,19 +1,22 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from sqlalchemy import text
-from infrastructure.database.init_db import init_db
-from infrastructure.database.session import engine
-
-
+from app.config import settings
+from app.infrastructure.database.init_db import init_db
+from app.infrastructure.database.session import engine
+from app.api.rest.router import router as rest_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()  # Run DB table creation
-    yield  # Let FastAPI run
-
-
+    await init_db()
+    yield
 
 app = FastAPI(lifespan=lifespan)
+
+versioned_router = APIRouter(prefix=f"/api/{settings.API_VERSION}")
+versioned_router.include_router(rest_router)
+
+app.include_router(versioned_router)
 
 @app.get("/")
 async def read_root():

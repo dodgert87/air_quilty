@@ -1,15 +1,16 @@
 from .session import engine
-from .base import Base
-from .models import (
-    user_secrets,
-    rate_limits,
-    user,
-    graphql_logs,
-    websocket_logs,
-    webhook_logs,
-    rest_logs,
-    api_keys,
-    sensor_data)
+from app.models.base import Base
+
+from app.models.sensor import SensorData
+from app.models.user import User
+from app.models.api_keys import APIKey
+from app.models.rate_limits import RateLimit
+from app.models.user_secrets import UserSecret
+from app.models.webhook_logs import WebhookLog
+from app.models.rest_logs import RestLog
+from app.models.graphql_logs import GraphQLLog
+
+
 
 import logging
 from sqlalchemy.exc import SQLAlchemyError
