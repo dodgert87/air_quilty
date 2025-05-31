@@ -1,6 +1,71 @@
-Server/venv/
-<<<<<<< HEAD
-Server/.env/
-=======
-Server/.env
->>>>>>> 38b7b23 (fixed the env file)
+# ─── PYTHON ENVIRONMENTS ─────────────
+venv/
+.venv/
+ENV/
+env/
+__pypackages__/
+
+# ─── BYTECODE / CACHE FILES ──────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ─── CONFIG / ENV FILES ──────────────
+.env
+.env.*
+!.env.example  # If you use a safe template
+
+# ─── EDITORS / IDEs ──────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# ─── SYSTEM FILES ────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ─── DOCKER / BUILD ARTIFACTS ────────
+*.log
+*.pid
+*.pid.lock
+*.db
+*.sqlite3
+docker-compose.override.yml
+coverage/
+htmlcov/
+
+# ─── TEST OUTPUT / STATIC CHECKERS ──
+.tox/
+.nox/
+.cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+
+# ─── GIT CONFIG / BACKUP FILES ───────
+.git/
+.gitignore.bak
+*.orig
+*.rej
+
+# ─── PROJECT BUILD / DIST FILES ──────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+
+# ─── OUTPUT / LOGS ───────────────────
+logs/
+*.log
+
+# ─── CUSTOM ──────────────────────────
+Server/logs/
+Server/*.db
