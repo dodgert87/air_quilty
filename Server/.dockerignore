@@ -1,0 +1,20 @@
+# Ignore local venv
+venv/
+.venv/
+
+# Ignore __pycache__ and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git and editor files
+.git/
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Don't copy .env (we'll mount it in production)
+.env
+.env.*
