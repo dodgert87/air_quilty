@@ -1,7 +1,7 @@
 from sqlalchemy import String, Integer, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from app.models.base import Base
 
@@ -9,7 +9,7 @@ class GraphQLLog(Base):
     __tablename__ = "graphql_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
     user_id: Mapped[uuid.UUID | None]
     api_key: Mapped[str | None]
     ip_address: Mapped[str]
