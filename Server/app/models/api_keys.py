@@ -12,5 +12,5 @@ class APIKey(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     label: Mapped[str | None]
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     expires_at: Mapped[datetime | None]

@@ -1,11 +1,15 @@
 from typing import List
+from uuid import UUID
 import jwt
 from pydantic import BaseModel
 import re
 
+from app.infrastructure.database import user_repository
+from app.models.user import User
+from app.infrastructure.database import api_key_repository
 from app.utils.jwt_utils import decode_jwt, generate_jwt
 from app.models.auth_schemas import LoginResponse, OnboardResult
-from app.utils.secret_utils import generate_secret, get_secret_expiry
+from app.utils.secret_utils import generate_api_key, generate_secret, get_secret_expiry
 from app.utils.hashing import hash_password, verify_password
 from app.utils.config import settings
 from app.infrastructure.database.user_repository import get_user_by_email, create_user, get_user_by_id
@@ -88,7 +92,6 @@ async def login_user(email: str, password: str) -> LoginResponse:
         )
 
 async def validate_token_and_get_user(token: str):
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     async with run_in_transaction() as db:
 
@@ -111,11 +114,31 @@ async def validate_token_and_get_user(token: str):
         if not user:
             raise ValueError("User not found")
 
-        return {
-            "user_id": user_id,
-            "role": payload.get("role"),
-            "user": user
-        }
+        return user
+
+async def generate_api_key_for_user(user_id: UUID, label: str | None = None) -> str:
+
+    async with run_in_transaction() as session:
+        keys = await api_key_repository.get_api_keys_by_user(session, user_id)
+        if len(keys) >= settings.MAX_API_KEYS_PER_USER:
+            raise ValueError("API key limit reached")
+
+        new_key = generate_api_key()
+        await api_key_repository.create_api_key(session, user_id, new_key, label=label)
+
+    return new_key
+
+async def validate_api_key(api_key: str) -> User:
+    async with run_in_transaction() as session:
+        key_obj = await api_key_repository.get_active_api_key(session, api_key)
+        if not key_obj:
+            raise ValueError("Invalid or inactive API key")
+
+        user = await user_repository.get_user_by_id(session, key_obj.user_id)
+        if not user:
+            raise ValueError("User not found for this API key")
+
+        return user
 
 def parse_full_name(name: str) -> tuple[str, str]:
     parts = re.split(r"\s+", name.strip())

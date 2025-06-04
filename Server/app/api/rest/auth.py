@@ -2,19 +2,10 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from typing import List
 
-from app.models.auth_schemas import LoginRequest, LoginResponse
-from app.domain.auth_logic import login_user, onboard_users_from_names
+from app.models.auth_schemas import LoginRequest, LoginResponse, OnboardResult, UserNameList
+from app.domain.auth_logic import generate_api_key_for_user, login_user, onboard_users_from_names
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-
-class UserNameList(BaseModel):
-    names: List[str]  # e.g. ["John Doe", "Alice Smith"]
-
-class OnboardResult(BaseModel):
-    created_count: int
-    users: List[str]        # newly created emails
-    skipped: List[str]      # emails that already existed
 
 
 
@@ -54,3 +45,19 @@ async def test_auth(request: Request):
         "role": user["role"],
         "email": user["user"].email  # You fetched user in `validate_token_and_get_user`
     }
+
+@router.post("/generate-api-key", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def generate_api_key(request: Request):
+    """
+    Generates a new API key for the authenticated user.
+    """
+    user = request.state.user  # Provided by JWT middleware
+    print("TYPE OF user IN request.state.user:", type(user))
+
+    try:
+        key = await generate_api_key_for_user(user.id)
+        return {"key": key}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Key generation failed: {str(e)}")

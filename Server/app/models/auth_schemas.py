@@ -10,7 +10,11 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
 
+
+class UserNameList(BaseModel):
+    names: List[str]  # e.g. ["John Doe", "Alice Smith"]
+
 class OnboardResult(BaseModel):
     created_count: int
-    users: List[str]
-    skipped: List[str]
+    users: List[str]        # newly created emails
+    skipped: List[str]      # emails that already existed
