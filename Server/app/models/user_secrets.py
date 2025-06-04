@@ -1,4 +1,5 @@
-from sqlalchemy import String, Boolean, DateTime, ForeignKey
+from typing import Optional
+from sqlalchemy import TIMESTAMP, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
@@ -13,6 +14,17 @@ class UserSecret(Base):
     secret: Mapped[str]
     label: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
-    expires_at: Mapped[datetime | None]
-    revoked_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        default=datetime.now(timezone.utc)
+    )
+
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )

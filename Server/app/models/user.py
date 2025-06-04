@@ -1,4 +1,5 @@
-from sqlalchemy import String, DateTime, Enum
+from typing import Optional
+from sqlalchemy import TIMESTAMP, String, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
@@ -21,5 +22,5 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     role: Mapped[RoleEnum]
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
-    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    last_login: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), default=None)

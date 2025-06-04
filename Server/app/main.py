@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from sqlalchemy import text
-from app.config import settings
+from app.utils.config import settings
 from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
