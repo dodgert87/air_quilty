@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
+from starlette.middleware import Middleware
 from sqlalchemy import text
+from app.middleware.login_auth_middleware import LoginAuthMiddleware
 from app.utils.config import settings
 from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
@@ -11,7 +13,12 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-app = FastAPI(lifespan=lifespan)
+
+middleware = [
+    Middleware(LoginAuthMiddleware)
+]
+
+app = FastAPI(lifespan=lifespan, middleware=middleware)
 
 versioned_router = APIRouter(prefix=f"/api/{settings.API_VERSION}")
 versioned_router.include_router(rest_router)

@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import uuid4
 from datetime import datetime, timezone
@@ -25,3 +26,13 @@ async def create_user_secret(
     db.add(new_secret)
     await db.flush()     # flush so it's ready in the same transaction
     return new_secret
+
+
+async def get_active_user_secret(db: AsyncSession, user_id) -> UserSecret | None:
+    result = await db.execute(
+        select(UserSecret).where(
+            UserSecret.user_id == user_id,
+            UserSecret.is_active == True
+        ).limit(1)
+    )
+    return result.scalar_one_or_none()
