@@ -39,11 +39,12 @@ async def test_auth(request: Request):
     user = getattr(request.state, "user", None)
     if user is None:
         return {"message": "No user authenticated (guest access)"}
+
     return {
         "message": "Authenticated user",
-        "user_id": user["user_id"],
-        "role": user["role"],
-        "email": user["user"].email  # You fetched user in `validate_token_and_get_user`
+        "user_id": str(user.id),
+        "role": user.role,
+        "email": user.email
     }
 
 @router.post("/generate-api-key", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -56,7 +57,11 @@ async def generate_api_key(request: Request):
 
     try:
         key = await generate_api_key_for_user(user.id)
-        return {"key": key}
+        return {
+                "key": key,  # only shown once
+                "note": "Store this securely. It won't be shown again."
+                }
+
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:

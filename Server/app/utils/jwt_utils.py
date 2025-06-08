@@ -35,3 +35,7 @@ def decode_jwt(token: str, secret: str) -> Dict[str, Any]:
         raise ValueError("Invalid token")
     except InvalidTokenError:
         raise ValueError("Token validation failed")
+
+
+def decode_jwt_unverified(token: str) -> dict:
+    return jwt.decode(token, key="", options={"verify_signature": False})

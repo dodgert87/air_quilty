@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import uuid4
+from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from app.models.user_secrets import UserSecret
 
@@ -24,15 +25,15 @@ async def create_user_secret(
     )
 
     db.add(new_secret)
-    await db.flush()     # flush so it's ready in the same transaction
+    await db.flush()
     return new_secret
 
 
-async def get_active_user_secret(db: AsyncSession, user_id) -> UserSecret | None:
+async def get_all_active_user_secrets(db: AsyncSession, user_id: UUID) -> Sequence[UserSecret]:
     result = await db.execute(
         select(UserSecret).where(
             UserSecret.user_id == user_id,
-            UserSecret.is_active == True
-        ).limit(1)
+            UserSecret.is_active.is_(True)
+        )
     )
-    return result.scalar_one_or_none()
+    return list(result.scalars().all())

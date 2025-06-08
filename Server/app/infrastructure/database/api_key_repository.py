@@ -29,3 +29,10 @@ async def get_active_api_key(session: AsyncSession, key: str) -> APIKey | None:
         select(APIKey).where(APIKey.key == key, APIKey.is_active.is_(True))
     )
     return result.scalar_one_or_none()
+
+
+async def get_all_active_keys(session: AsyncSession) -> list[APIKey]:
+    result = await session.execute(
+        select(APIKey).where(APIKey.is_active.is_(True))
+    )
+    return list(result.scalars().all())
