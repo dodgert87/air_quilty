@@ -4,6 +4,9 @@
 #include <SensirionI2cScd4x.h>
 #include <WiFi.h>
 #include <time.h>
+#include <ArduinoMqttClient.h>
+#include <ArduinoJson.h>
+
 
 // Collected sensor data
 struct airQualityData {
@@ -57,6 +60,16 @@ void PrintUint64(uint64_t& value) {
 }
 bool dataReady = false;
 
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
+
+// MQTT 
+const char broker[] = "172.16.7.177";
+int        port     = 1883;
+const char topic[]  = "A3/AirQuality/Sensor1";
+uint8_t    qos      = 2;
+String     message  = "";
+
 // Please use "arduino_secrets.h" for your WiFi credentials
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
@@ -109,17 +122,43 @@ void setup() {
     Serial.println(errorMessage);
     return;
   }
+  error = sensor.startPeriodicMeasurement();
+  if (error != NO_ERROR) {
+    Serial.print("Error trying to execute startPeriodicMeasurement(): ");
+    errorToString(error, errorMessage, sizeof errorMessage);
+    Serial.println(errorMessage);
+    return;
+  }
 
   Serial.print("serial number: 0x");
   PrintUint64(serialNumber);
   Serial.println();
-
 
   connectToWifi();
   printCurrentNet();
   // Uses NTP server to fetch time and save it to onboard RTC
   configTzTime(tz, ntpServer);
   printLocalTime();
+
+  // You can provide a unique client ID, if not set the library uses Arduino-millis()
+  // Each client must have a unique client ID
+  mqttClient.setId("S1");
+
+  // You can provide a username and password for authentication
+  // mqttClient.setUsernamePassword("username", "password");
+
+  Serial.print("Attempting to connect to the MQTT broker: ");
+  Serial.println(broker);
+
+  if (!mqttClient.connect(broker, port)) {
+    Serial.print("MQTT connection failed! Error code = ");
+    Serial.println(mqttClient.connectError());
+
+    while (1);
+  }
+
+  Serial.println("You're connected to the MQTT broker!");
+  Serial.println();
 }
 
 void loop() {
@@ -128,6 +167,7 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
 
+    timestamp = createTimestamp();
     // TEST PRINT
     Serial.println(createTimestamp());
     // Reconnect WiFi if connection drops
@@ -136,6 +176,11 @@ void loop() {
       connectToWifi();
     }
     readSensors();
+
+    dataToJson();
+
+    sendMessage();
+
   }
 }
 
@@ -194,14 +239,14 @@ String createTimestamp() {
 
 void readSensors() {
   // Start periodic measurements (5sec interval)
-  error = sensor.startPeriodicMeasurement();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute startPeriodicMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
-  delay(2000);
+  // error = sensor.startPeriodicMeasurement();
+  // if (error != NO_ERROR) {
+  //   Serial.print("Error trying to execute startPeriodicMeasurement(): ");
+  //   errorToString(error, errorMessage, sizeof errorMessage);
+  //   Serial.println(errorMessage);
+  //   return;
+  // }
+  // delay(2000);
 
   error = sensor.getDataReadyStatus(dataReady);
   if (error != NO_ERROR) {
@@ -220,7 +265,7 @@ void readSensors() {
       return;
     }
   }
-  //
+  
   // If ambient pressure compenstation during measurement
   // is required, you should call the respective functions here.
   // Check out the header file for the function definition.
@@ -230,13 +275,6 @@ void readSensors() {
     errorToString(error, errorMessage, sizeof errorMessage);
     Serial.println(errorMessage);
     return;
-  }
-
-  error = sensor.stopPeriodicMeasurement();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute stopPeriodicMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
   }
 
   //
@@ -349,4 +387,63 @@ void readSensors() {
     Serial.println("-----------------------");
   } else {
   }
+}
+
+void dataToJson() {
+  StaticJsonDocument<512> doc;
+
+  doc["timestamp"] = timestamp;
+  doc["sensorid"] = "sensor1";
+  doc["pm1_0"] = currentData.pm1_0;
+  doc["pm2_5"] = currentData.pm2_5;
+  doc["pm10"] = currentData.pm10;
+  doc["pmInAir1_0"] = currentData.pmInAir1_0;
+  doc["pmInAir2_5"] = currentData.pmInAir2_5;
+  doc["pmInAir10"] = currentData.pmInAir10;
+  doc["particles0_3"] = currentData.particles0_3;
+  doc["particles0_5"] = currentData.particles0_5;
+  doc["particles1_0"] = currentData.particles1_0;
+  doc["particles2_5"] = currentData.particles2_5;
+  doc["particles5_0"] = currentData.particles5_0;
+  doc["particles10"] = currentData.particles10;
+  doc["tvoc"] = currentData.tvoc;
+  doc["eco2"] = currentData.eco2;
+  doc["compT"] = currentData.compT;
+  doc["compRH"] = currentData.compRH;
+  doc["rawT"] = currentData.rawT;
+  doc["rawRH"] = currentData.rawRH;
+  doc["rs0"] = currentData.rs0;
+  doc["rs1"] = currentData.rs1;
+  doc["rs2"] = currentData.rs2;
+  doc["rs3"] = currentData.rs3;
+  doc["aqi"] = currentData.aqi;
+  doc["co2"] = currentData.co2;
+  doc["temp"] = currentData.temp;
+  doc["hum"] = currentData.hum;
+
+  serializeJson(doc, message);
+  // json to Serial for testing
+  serializeJson(doc, Serial);
+  return;
+}
+
+void sendMessage() {
+  if (!mqttClient.connected()) {   
+    Serial.print("MQTT connection failed! Error code = ");
+    Serial.println(mqttClient.connectError());
+    mqttClient.connect(broker, port);
+    delay(2000);
+  }
+
+  Serial.println();
+  Serial.print("Sending message to topic: ");
+  Serial.println(topic);
+  Serial.println();
+
+  // send message, the Print interface can be used to set the message contents
+  mqttClient.beginMessage(topic, message.length(), false, qos, false);
+  mqttClient.print(message);
+  mqttClient.endMessage();
+
+  return;
 }
