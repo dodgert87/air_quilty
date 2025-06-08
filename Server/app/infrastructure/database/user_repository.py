@@ -58,3 +58,17 @@ async def get_user_by_id(db: AsyncSession, user_id: UUID) -> User | None:
         select(User).where(User.id == user_id)
     )
     return result.scalar_one_or_none()
+
+async def update_user_password(session: AsyncSession, user_id: UUID, hashed_password: str):
+    await session.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(hashed_password=hashed_password)
+    )
+
+async def update_last_login(session: AsyncSession, user_id: UUID):
+    await session.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(last_login=datetime.now(timezone.utc))
+    )

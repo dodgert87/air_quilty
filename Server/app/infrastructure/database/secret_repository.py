@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
@@ -35,5 +35,18 @@ async def get_all_active_user_secrets(db: AsyncSession, user_id: UUID) -> Sequen
             UserSecret.user_id == user_id,
             UserSecret.is_active.is_(True)
         )
+    )
+    return list(result.scalars().all())
+
+async def revoke_all_user_secrets(session: AsyncSession, user_id: UUID):
+    await session.execute(
+        update(UserSecret)
+        .where(UserSecret.user_id == user_id, UserSecret.is_active == True)
+        .values(is_active=False, revoked_at=datetime.now(timezone.utc))
+    )
+
+async def get_user_secrets(session: AsyncSession, user_id: UUID) -> list[UserSecret]:
+    result = await session.execute(
+        select(UserSecret).where(UserSecret.user_id == user_id)
     )
     return list(result.scalars().all())

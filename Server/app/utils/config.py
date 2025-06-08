@@ -1,5 +1,5 @@
 from pathlib import Path
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logging
 from typing import ClassVar
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     ENV: str = Field(default="local")  # or "docker"
     DATABASE_URL: str | None = None
     DATABASE_URL_LOCAL: str | None = None
-    API_VERSION: str = "v1"
+    API_VERSION: str
 
     # ─── Default Password ────────────────────────────────
     DEFAULT_USER_PASSWORD: str = "ChangeMe123!"
@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     API_KEY_LENGTH: int = 32
     API_KEY_EXPIRATION_DAYS: int = 90
     MAX_API_KEYS_PER_USER: int = 5  # active only
+
+    # ─── Admin Bootstrap ─────────────────────────────
+    ADMIN_EMAIL: str
+    ADMIN_PASSWORD: SecretStr
 
     # Go three levels up: utils → app → Server → .env
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]
@@ -61,7 +65,7 @@ class Settings(BaseSettings):
 
 # Try to load the settings
 try:
-    settings = Settings()
+    settings = Settings() # type: ignore
 except ValidationError as e:
     logger.error(f"Validation error in settings: {e}")
     settings = None

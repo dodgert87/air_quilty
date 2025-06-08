@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 middleware = [
     Middleware(LoginAuthMiddleware),
-    Middleware(APIKeyAuthMiddleware)
+    Middleware(APIKeyAuthMiddleware),
 ]
 
 app = FastAPI(lifespan=lifespan, middleware=middleware)

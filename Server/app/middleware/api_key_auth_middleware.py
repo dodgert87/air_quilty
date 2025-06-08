@@ -2,13 +2,15 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from fastapi import Request
 from app.domain.auth_logic import validate_api_key
+from app.utils.config import settings
+
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
         # Only handle /sensor
-        if not path.startswith("/api/v1/sensor"):
+        if not path.startswith(f"/api/{settings.API_VERSION}/sensor"):
             return await call_next(request)
 
         api_key = request.headers.get("X-API-Key")
