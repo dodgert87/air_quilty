@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: SecretStr
 
+    # ─── Pagination Settings ────────────────────────────────
+    DEFAULT_PAGE_SIZE: int
+
+
     # Go three levels up: utils → app → Server → .env
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]
     env_file_path: ClassVar[Path] = project_root / ".env"

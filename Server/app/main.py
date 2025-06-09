@@ -3,8 +3,6 @@ from fastapi import APIRouter, FastAPI
 from fastapi.responses import JSONResponse
 from starlette.middleware import Middleware
 from sqlalchemy import text
-from app.models.sensor import SensorDataOut
-from app.domain.sensor_logic import get_latest_sensor_data
 from app.middleware.login_auth_middleware import LoginAuthMiddleware
 from app.middleware.api_key_auth_middleware import APIKeyAuthMiddleware
 from app.utils.config import settings
@@ -45,23 +43,3 @@ async def health_check():
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
-@app.get("/openData", response_model=Response.success[list[SensorDataOut]])
-async def fetch_latest_sensor_data():
-    try:
-        data = await get_latest_sensor_data()
-        return Response.success(
-            message=Response.message.OK,
-            http_code=Response.http.OK,
-            app_code=Response.code.OK,
-            data=data
-        )
-    except Exception as e:
-        return JSONResponse(
-            status_code=Response.http.SERVER_ERROR,
-            content=Response.error(
-                message=Response.message.UNKNOWN_ERROR,
-                http_code=Response.http.SERVER_ERROR,
-                app_code=Response.code.UNKNOWN_ERROR,
-                errors={"error": str(e)}
-            ).model_dump()
-        )

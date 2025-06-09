@@ -3,7 +3,7 @@ from sqlalchemy.future import select
 from sqlalchemy import desc
 
 
-from app.models.sensor import SensorData, SensorDataIn
+from app.models.sensor_data import SensorData, SensorDataIn
 
 
 async def fetch_latest_sensor_data(db: AsyncSession, limit: int = 100):
