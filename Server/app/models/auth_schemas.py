@@ -1,5 +1,9 @@
+from datetime import datetime
 from typing import List, Literal, Optional
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
+
+from app.models.user import RoleEnum
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -34,3 +38,25 @@ class APIKeyRequest(BaseModel):
 
 class APIKeyDeleteRequest(BaseModel):
     label: str = Field(..., min_length=1, description="Label of the API key to delete")
+
+class UserDeleteRequest(BaseModel):
+    id: Optional[UUID] = None
+    email: Optional[EmailStr] = None
+    name: Optional[str] = Field(None, description="Full name (first + last)")
+
+    def one_field_provided(self) -> bool:
+        return any([self.id, self.email, self.name])
+
+class UserLookupPayload(BaseModel):
+    user_id: Optional[UUID] = None
+    email: Optional[EmailStr] = None
+    name: Optional[str] = Field(None, description="Full name (e.g., John Doe)")
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    username: str
+    role: RoleEnum
+    created_at: datetime
+    last_login: Optional[datetime]

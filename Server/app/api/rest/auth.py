@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from typing import List
 
-from app.models.auth_schemas import APIKeyDeleteRequest, APIKeyRequest, ChangePasswordRequest, LoginRequest, LoginResponse, OnboardResult, UserOnboardRequest
-from app.domain.auth_logic import change_user_password, delete_api_key_for_user, generate_api_key_for_user, get_user_profile_data, login_user, onboard_users_from_inputs
+from app.models.auth_schemas import APIKeyDeleteRequest, APIKeyRequest, ChangePasswordRequest, LoginRequest, LoginResponse, OnboardResult, UserLookupPayload, UserOnboardRequest, UserResponse
+from app.domain.auth_logic import change_user_password, delete_api_key_for_user, delete_user_by_identifier, find_user_info, generate_api_key_for_user, get_all_users, get_user_profile_data, login_user, onboard_users_from_inputs
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -23,6 +23,25 @@ async def onboard_users(payload: UserOnboardRequest):
             detail=f"Failed to onboard users: {str(e)}"
         )
 
+@router.get("/admin/all-users", response_model=List[UserResponse])
+async def list_all_users():
+    users = await get_all_users()
+    return users
+
+@router.post("/admin/find-user", response_model=UserResponse)
+async def find_user_endpoint(payload: UserLookupPayload):
+    user = await find_user_info(payload.user_id, payload.email, payload.name)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.delete("/admin/delete-user", response_model=dict)
+async def delete_user(payload: UserLookupPayload):
+    try:
+        email = await delete_user_by_identifier(payload.user_id, payload.email, payload.name)
+        return {"message": f"User {email} deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("/login", response_model=LoginResponse)
 async def login(payload: LoginRequest):

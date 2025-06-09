@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from app.models.user import User
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
@@ -72,3 +73,12 @@ async def update_last_login(session: AsyncSession, user_id: UUID):
         .where(User.id == user_id)
         .values(last_login=datetime.now(timezone.utc))
     )
+
+async def delete_user(session: AsyncSession, user_id: UUID) -> None:
+    await session.execute(
+        delete(User).where(User.id == user_id)
+    )
+
+async def get_all_users(session: AsyncSession) -> Sequence[User]:
+    result = await session.execute(select(User))
+    return result.scalars().all()

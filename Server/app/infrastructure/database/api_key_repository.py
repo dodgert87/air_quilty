@@ -53,3 +53,9 @@ async def revoke_all_user_api_keys(session: AsyncSession, user_id: UUID) -> None
         .where(APIKey.user_id == user_id, APIKey.is_active.is_(True))
         .values(is_active=False)
     )
+
+
+async def delete_all_user_api_keys(session: AsyncSession, user_id: UUID) -> None:
+    await session.execute(
+        delete(APIKey).where(APIKey.user_id == user_id)
+    )

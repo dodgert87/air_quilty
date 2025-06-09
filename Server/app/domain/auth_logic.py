@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 import re
 
@@ -231,3 +231,37 @@ async def get_user_profile_data(user_id: UUID) -> dict:
             "secrets": secret_data,
             "api_keys": api_key_data
         }
+
+async def find_user(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
+    async with run_in_transaction() as session:
+        if user_id:
+            return await user_repository.get_user_by_id(session, user_id)
+        if email:
+            return await user_repository.get_user_by_email(session, email)
+        if name:
+            first, last = parse_full_name(name)
+            generated_email = f"{first.lower()}.{last.lower()}@tuni.fi"
+            return await user_repository.get_user_by_email(session, generated_email)
+        return None
+
+
+async def delete_user_by_identifier(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> str:
+    async with run_in_transaction() as session:
+        user = await find_user(user_id, email, name)
+        if not user:
+            raise ValueError("User not found with the provided identifier")
+
+        await secret_repository.delete_user_secrets(session, user.id)
+        await api_key_repository.delete_all_user_api_keys(session, user.id)
+        await user_repository.delete_user(session, user.id)
+
+        return user.email
+
+
+async def get_all_users() -> List[User]:
+    async with run_in_transaction() as session:
+        return list(await user_repository.get_all_users(session))
+
+async def find_user_info(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
+    async with run_in_transaction() as session:
+        return await find_user(user_id, email, name)

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
@@ -50,3 +50,8 @@ async def get_user_secrets(session: AsyncSession, user_id: UUID) -> list[UserSec
         select(UserSecret).where(UserSecret.user_id == user_id)
     )
     return list(result.scalars().all())
+
+async def delete_user_secrets(session: AsyncSession, user_id: UUID) -> None:
+    await session.execute(
+        delete(UserSecret).where(UserSecret.user_id == user_id)
+    )
