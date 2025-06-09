@@ -48,7 +48,7 @@ class LoginAuthMiddleware(BaseHTTPMiddleware):
                 if user is None:
                     return JSONResponse(status_code=401, content={"detail": "Authentication required"})
                 if user.role not in allowed_roles:
-                    return JSONResponse(status_code=403, content={"detail": f"Access denied"})
+                    return JSONResponse(status_code=403, content={"detail": f"Access denied for role: {user.role}"})
                 break
 
         return await call_next(request)
