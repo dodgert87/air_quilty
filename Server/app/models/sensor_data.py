@@ -12,7 +12,7 @@ class SensorData(Base):
     __tablename__ = "sensor_data"
 
     id: Mapped[uuid.UUID] = mapped_column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id: Mapped[str] = mapped_column(String, index=True)
+    device_id: Mapped[uuid.UUID] = mapped_column(SQLUUID(as_uuid=True), index=True)
     timestamp: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Core metrics
