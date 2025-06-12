@@ -29,17 +29,16 @@ This project is a Wi-Fi connected air quality monitoring system based on the Ard
 
  **TODO: ADD SERVER SIDE AND FRONTEND DETAILS**
 
- <img src="Images/diagram.png" alt="project diagram" width="500">
+ <img src="Images/diagram.png" alt="project diagram" width="700">
 
 ## Installation & Use
 
 - Build a circuit that connects the air quality sensors to Arduino.  
 **Note:** APC1 uses JST GHR-08V-S connector, SCD-41 has Qwiic type.  
-<img src="Images/circuit.png" alt="project circuit" width="500">
-
 - Install Arduino IDE and libraries used in the project.
 - Add requires connection information to "arduino_secrets.h" 
 - Connect Arduino board via USB and upload project code in "a3_air_quality.ino".
+<img src="Images/circuit.png" alt="project circuit" width="600"> 
 
 **TODO: BACKEND INSTALLATION**
 
