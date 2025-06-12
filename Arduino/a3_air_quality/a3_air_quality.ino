@@ -4,7 +4,6 @@
 #include <time.h>
 // Libraries that require installation
 #include <apc1.h>
-#include <SensirionI2cScd4x.h>
 #include <ArduinoMqttClient.h>
 #include <ArduinoJson.h>
 
@@ -49,7 +48,7 @@ airQualityData currentData;
 #endif
 #define NO_ERROR 0
 
-SensirionI2cScd4x sensor;
+const int16_t SCD_ADDRESS = 0x62;
 
 static char errorMessage[64];
 static int16_t error;
@@ -58,12 +57,12 @@ bool dataReady = false;
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
-// MQTT 
+// MQTT
 const char broker[] = BROKER_IP;
-int        port     = 1883;
-const char topic[]  = "A3/AirQuality/Sensor1";
-uint8_t    qos      = 2;
-String     message  = "";
+int port = 1883;
+const char topic[] = "A3/AirQuality/Sensor1";
+uint8_t qos = 2;
+String message = "";
 
 // Please use "arduino_secrets.h" for your WiFi credentials
 const char* ssid = SECRET_SSID;
@@ -84,46 +83,15 @@ void setup() {
   delay(100);
   // Initialize I2C bus
   Wire.begin();
+  delay(1000);
   // Initialize sensors
   apc1.begin(&Wire);
-  sensor.begin(Wire, SCD41_I2C_ADDR_62);
+  // Start SCD41 measurement in periodic mode, will update every 5 s
+  Wire.beginTransmission(SCD_ADDRESS);
+  Wire.write(0x21);
+  Wire.write(0xb1);
+  Wire.endTransmission();
 
-  uint64_t serialNumber = 0;
-  delay(30);
-  // Ensure sensor is in clean state
-  error = sensor.wakeUp();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute wakeUp(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-  }
-  error = sensor.stopPeriodicMeasurement();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute stopPeriodicMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-  }
-  error = sensor.reinit();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute reinit(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-  }
-  // Read out information about the sensor
-  error = sensor.getSerialNumber(serialNumber);
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute getSerialNumber(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
-  error = sensor.startPeriodicMeasurement();
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute startPeriodicMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
 
   connectToWifi();
   printCurrentNet();
@@ -170,7 +138,6 @@ void loop() {
     dataToJson();
 
     sendMessage();
-
   }
 }
 
@@ -228,46 +195,32 @@ String createTimestamp() {
 }
 
 void readSensors() {
-  // Start periodic measurements (5sec interval)
-  // error = sensor.startPeriodicMeasurement();
-  // if (error != NO_ERROR) {
-  //   Serial.print("Error trying to execute startPeriodicMeasurement(): ");
-  //   errorToString(error, errorMessage, sizeof errorMessage);
-  //   Serial.println(errorMessage);
-  //   return;
-  // }
-  // delay(2000);
 
-  error = sensor.getDataReadyStatus(dataReady);
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute getDataReadyStatus(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
-  while (!dataReady) {
-    delay(100);
-    error = sensor.getDataReadyStatus(dataReady);
-    if (error != NO_ERROR) {
-      Serial.print("Error trying to execute getDataReadyStatus(): ");
-      errorToString(error, errorMessage, sizeof errorMessage);
-      Serial.println(errorMessage);
-      return;
-    }
-  }
-  
-  // If ambient pressure compenstation during measurement
-  // is required, you should call the respective functions here.
-  // Check out the header file for the function definition.
-  error = sensor.readMeasurement(currentData.co2, currentData.temp, currentData.hum);
-  if (error != NO_ERROR) {
-    Serial.print("Error trying to execute readMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
+  uint8_t data[12], counter;
+
+  // Send read data command
+  Wire.beginTransmission(SCD_ADDRESS);
+  Wire.write(0xec);
+  Wire.write(0x05);
+  Wire.endTransmission();
+
+  // Read measurement data: 2 bytes co2, 1 byte CRC,
+  // 2 bytes T, 1 byte CRC, 2 bytes RH, 1 byte CRC,
+  // 2 bytes sensor status, 1 byte CRC
+  // stop reading after 12 bytes (not used)
+  Wire.requestFrom(SCD_ADDRESS, 12);
+  counter = 0;
+  while (Wire.available()) {
+    data[counter++] = Wire.read();
   }
 
-  //
+  // Combine two bytes of data and convert to float
+  currentData.co2 = (float)((uint16_t)data[0] << 8 | data[1]);
+  // Convert T in degC
+  currentData.temp = -45 + 175 * (float)((uint16_t)data[3] << 8 | data[4]) / 65536;
+  // Convert RH in %
+  currentData.hum = 100 * (float)((uint16_t)data[6] << 8 | data[7]) / 65536;
+
   // Print results in physical units.
   Serial.print("CO2 concentration [ppm]: ");
   Serial.print(currentData.co2);
@@ -418,7 +371,7 @@ void dataToJson() {
 }
 
 void sendMessage() {
-  if (!mqttClient.connected()) {   
+  if (!mqttClient.connected()) {
     Serial.print("MQTT connection failed! Error code = ");
     Serial.println(mqttClient.connectError());
     mqttClient.connect(broker, port);
