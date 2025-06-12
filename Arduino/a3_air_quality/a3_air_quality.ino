@@ -1,9 +1,10 @@
 #include "arduino_secrets.h"
 #include <Wire.h>
-#include <apc1.h>
-#include <SensirionI2cScd4x.h>
 #include <WiFi.h>
 #include <time.h>
+// Libraries that require installation
+#include <apc1.h>
+#include <SensirionI2cScd4x.h>
 #include <ArduinoMqttClient.h>
 #include <ArduinoJson.h>
 
@@ -52,19 +53,13 @@ SensirionI2cScd4x sensor;
 
 static char errorMessage[64];
 static int16_t error;
-
-void PrintUint64(uint64_t& value) {
-  Serial.print("0x");
-  Serial.print((uint32_t)(value >> 32), HEX);
-  Serial.print((uint32_t)(value & 0xFFFFFFFF), HEX);
-}
 bool dataReady = false;
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
 // MQTT 
-const char broker[] = "172.16.7.177";
+const char broker[] = BROKER_IP;
 int        port     = 1883;
 const char topic[]  = "A3/AirQuality/Sensor1";
 uint8_t    qos      = 2;
@@ -129,10 +124,6 @@ void setup() {
     Serial.println(errorMessage);
     return;
   }
-
-  Serial.print("serial number: 0x");
-  PrintUint64(serialNumber);
-  Serial.println();
 
   connectToWifi();
   printCurrentNet();
