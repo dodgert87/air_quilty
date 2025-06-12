@@ -37,6 +37,7 @@ class LoginAuthMiddleware(BaseHTTPMiddleware):
             try:
                 user = await validate_token_and_get_user(token)
                 request.state.user = user
+                request.state.user_id = user.id
             except ValueError as e:
                 return JSONResponse(status_code=401, content={"detail": str(e)})
         else:

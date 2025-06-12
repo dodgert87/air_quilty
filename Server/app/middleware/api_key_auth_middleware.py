@@ -45,6 +45,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         try:
             user = await validate_api_key(api_key)
             request.state.user = user
+            request.state.user_id = user.id
             request.state.auth_method = "apikey"
         except Exception as e:
             return JSONResponse(status_code=401, content={"detail": f"API key auth failed: {str(e)}"})

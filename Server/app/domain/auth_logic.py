@@ -16,8 +16,7 @@ from app.utils.config import settings
 from app.infrastructure.database.user_repository import get_user_by_email, create_user, get_user_by_id, update_last_login
 from app.infrastructure.database.secret_repository import create_user_secret, get_all_active_user_secrets
 from app.infrastructure.database.transaction import run_in_transaction
-
-
+from app.utils.exceptions_base import AppException, AuthValidationError, UserNotFoundError, AuthConflictError
 
 
 async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
@@ -62,26 +61,21 @@ async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
         skipped=skipped_users
     )
 
+
 async def change_user_password(user: User, old_password: str, new_password: str, label: str | None = None):
     if not verify_value(old_password, user.hashed_password):
-        raise ValueError("Old password is incorrect")
+        raise AuthValidationError("Old password is incorrect")
 
     if not validate_password_complexity(new_password):
-        raise ValueError("New password does not meet complexity requirements")
+        raise AuthValidationError("New password does not meet complexity requirements")
 
     hashed = hash_value(new_password)
 
     async with run_in_transaction() as session:
-        # 1. Update password
         await user_repository.update_user_password(session, user.id, hashed)
-
-        # 2. Revoke old secrets
         await secret_repository.revoke_all_user_secrets(session, user.id)
-
-        # 3. Revoke all API keys (manual re-creation required)
         await api_key_repository.revoke_all_user_api_keys(session, user.id)
 
-        # 4. Create new active secret
         await secret_repository.create_user_secret(
             session,
             user_id=user.id,
@@ -91,11 +85,12 @@ async def change_user_password(user: User, old_password: str, new_password: str,
             expires_at=get_secret_expiry()
         )
 
+
 async def login_user(email: str, password: str) -> LoginResponse:
     async with run_in_transaction() as db:
         user = await get_user_by_email(db, email)
         if not user or not verify_value(password, user.hashed_password):
-            raise ValueError("Invalid email or password")
+            raise AuthValidationError("Invalid email or password")
 
         _, active_secret = await get_user_and_active_secret(user.id)
 
@@ -112,16 +107,17 @@ async def login_user(email: str, password: str) -> LoginResponse:
             expires_in=expires_in
         )
 
+
 async def validate_token_and_get_user(token: str) -> User:
     async with run_in_transaction() as db:
         unverified = decode_jwt_unverified(token)
         user_id = unverified.get("sub")
         if not user_id:
-            raise ValueError("Token missing 'sub' claim")
+            raise AuthValidationError("Token missing 'sub' claim")
 
         secrets = await get_all_active_user_secrets(db, user_id)
         if not secrets:
-            raise ValueError("No active secrets")
+            raise AuthValidationError("No active secrets")
 
         for s in secrets:
             try:
@@ -130,11 +126,11 @@ async def validate_token_and_get_user(token: str) -> User:
             except Exception:
                 continue
         else:
-            raise ValueError("Invalid or expired token")
+            raise AuthValidationError("Invalid or expired token")
 
         user = await get_user_by_id(db, user_id)
         if not user:
-            raise ValueError("User not found")
+            raise UserNotFoundError("User for valid token")
 
         return user
 
@@ -144,18 +140,17 @@ async def generate_api_key_for_user(user_id: UUID, label: str) -> str:
         keys = await api_key_repository.get_api_keys_by_user(session, user_id)
 
         if len(keys) >= settings.MAX_API_KEYS_PER_USER:
-            raise ValueError("API key limit reached")
+            raise AuthConflictError("API key limit reached")
 
         if any(k.label == label for k in keys):
-            raise ValueError(f"API key label '{label}' already in use")
+            raise AuthConflictError(f"API key label '{label}' already in use")
 
         raw_key = generate_api_key()
         hashed_key = hash_value(raw_key)
 
-        # Optional: Check for accidental key hash collision
         for existing in keys:
             if verify_value(raw_key, existing.key):
-                raise ValueError("Generated API key matches existing one — try again")
+                raise AuthConflictError("Generated API key matches existing one — try again")
 
         await api_key_repository.create_api_key(
             session,
@@ -167,26 +162,27 @@ async def generate_api_key_for_user(user_id: UUID, label: str) -> str:
 
     return raw_key
 
+
 async def validate_api_key(api_key: str) -> User:
     async with run_in_transaction() as session:
-        # Step 1: Get all active keys
         all_keys = await api_key_repository.get_all_active_keys(session)
 
-        # Step 2: Compare in Python using bcrypt-safe compare
         for key_obj in all_keys:
-            if verify_value(api_key, key_obj.key):  # key_obj.key is hashed
+            if verify_value(api_key, key_obj.key):
                 user = await get_user_by_id(session, key_obj.user_id)
                 if not user:
-                    raise ValueError("User not found for this API key")
+                    raise UserNotFoundError("User for API key")
                 return user
 
-        raise ValueError("Invalid or inactive API key")
+        raise AuthValidationError("Invalid or inactive API key")
+
 
 async def delete_api_key_for_user(user_id: UUID, label: str) -> None:
     async with run_in_transaction() as session:
         deleted = await api_key_repository.delete_api_key_by_label(session, user_id, label)
         if not deleted:
-            raise ValueError("API key with this label was not found")
+            raise UserNotFoundError(f"API key with label '{label}'")
+
 
 def parse_full_name(name: str) -> tuple[str, str]:
     parts = re.split(r"\s+", name.strip())
@@ -195,24 +191,24 @@ def parse_full_name(name: str) -> tuple[str, str]:
     return parts[0], parts[-1]
 
 
-
 async def get_user_and_active_secret(user_id: UUID) -> tuple[User, UserSecret]:
     async with run_in_transaction() as session:
         user = await get_user_by_id(session, user_id)
         if not user:
-            raise ValueError("User not found")
+            raise UserNotFoundError()
 
         secrets = await get_all_active_user_secrets(session, user_id)
         if not secrets:
-            raise ValueError("No active secret found for user")
+            raise AuthValidationError("No active secret found for user")
 
         return user, secrets[0]
+
 
 async def get_user_profile_data(user_id: UUID) -> dict:
     async with run_in_transaction() as session:
         user = await user_repository.get_user_by_id(session, user_id)
         if not user:
-            raise ValueError("User not found")
+            raise UserNotFoundError()
 
         secrets = await secret_repository.get_user_secrets(session, user.id)
         secret_data = [
@@ -232,6 +228,7 @@ async def get_user_profile_data(user_id: UUID) -> dict:
             "api_keys": api_key_data
         }
 
+
 async def find_user(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
     async with run_in_transaction() as session:
         if user_id:
@@ -249,7 +246,7 @@ async def delete_user_by_identifier(user_id: Optional[UUID], email: Optional[str
     async with run_in_transaction() as session:
         user = await find_user(user_id, email, name)
         if not user:
-            raise ValueError("User not found with the provided identifier")
+            raise UserNotFoundError("User not found with the provided identifier")
 
         await secret_repository.delete_user_secrets(session, user.id)
         await api_key_repository.delete_all_user_api_keys(session, user.id)
@@ -261,6 +258,7 @@ async def delete_user_by_identifier(user_id: Optional[UUID], email: Optional[str
 async def get_all_users() -> List[User]:
     async with run_in_transaction() as session:
         return list(await user_repository.get_all_users(session))
+
 
 async def find_user_info(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
     async with run_in_transaction() as session:

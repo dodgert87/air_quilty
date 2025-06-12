@@ -1,16 +1,20 @@
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware import Middleware
 from sqlalchemy import text
+from app.middleware.RestLoggerMiddleware import RestLoggerMiddleware
+from app.exception_handlers import app_exception_handler, fallback_exception_handler, validation_error_handler
+from app.utils.exceptions_base import AppException
 from app.middleware.login_auth_middleware import LoginAuthMiddleware
 from app.middleware.api_key_auth_middleware import APIKeyAuthMiddleware
 from app.utils.config import settings
 from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
-from app.models.response import Response
+from app.utils.logging_config import setup_logging
 
+setup_logging() # Initialize logging configuration
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +25,7 @@ async def lifespan(app: FastAPI):
 middleware = [
     Middleware(LoginAuthMiddleware),
     Middleware(APIKeyAuthMiddleware),
+    Middleware(RestLoggerMiddleware)
 ]
 
 app = FastAPI(lifespan=lifespan, middleware=middleware)
@@ -29,6 +34,10 @@ versioned_router = APIRouter(prefix=f"/api/{settings.API_VERSION}")
 versioned_router.include_router(rest_router)
 
 app.include_router(versioned_router)
+
+app.add_exception_handler(AppException, app_exception_handler) # type: ignore
+app.add_exception_handler(RequestValidationError, validation_error_handler) # type: ignore
+app.add_exception_handler(Exception, fallback_exception_handler)
 
 @app.get("/")
 async def read_root():
