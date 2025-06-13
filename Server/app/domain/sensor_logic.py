@@ -1,5 +1,6 @@
 from uuid import UUID
-from app.models.sensor_schemas import SensorCreate, SensorUpdate
+from app.api.rest.sensor_metadata import list_all_sensors
+from app.models.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
 from app.infrastructure.database import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
 
@@ -31,3 +32,11 @@ async def delete_sensor(sensor_id: UUID):
     if not success:
         raise SensorNotFoundError(sensor_id)
     return True
+
+async def list_sensors_with_placeholder() -> list[SensorOut]:
+    all_sensors = await list_all_sensors()
+    return [
+        SensorOut.model_validate(s)
+        for s in all_sensors
+        if s.name == "UNKNOWN"
+    ]

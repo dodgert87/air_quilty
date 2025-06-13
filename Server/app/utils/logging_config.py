@@ -35,7 +35,7 @@ def setup_logging():
         backtrace=False,
         colorize=True,
     )
-
+"""
     #  Optional: JSON file logging
     logger.add(
         "logs/structured.json",
@@ -47,3 +47,4 @@ def setup_logging():
         backtrace=True,
         diagnose=True,
     )
+"""

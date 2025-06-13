@@ -14,8 +14,8 @@ class SensorDataIn(BaseModel):
     timestamp: datetime = Field(alias="timestamp")
 
     # ───────────────────────── Aggregated Metrics ──────────────────────────
-    temperature: float = Field(alias="temp")
-    humidity: float = Field(alias="hum")
+    temperature: float
+    humidity: float
 
     pm1_0: float
     pm2_5: float

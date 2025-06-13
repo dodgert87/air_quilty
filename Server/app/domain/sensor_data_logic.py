@@ -14,14 +14,6 @@ async def query_sensor_data_by_ranges(payload: SensorRangeQuery):
 
 
 async def create_sensor_data_entry(payload: SensorDataIn):
-    sensor = await sensor_repository.fetch_sensor_by_id(payload.device_id)
-    if not sensor:
-        raise AppException(
-            message=f"Sensor ID {payload.device_id} not found",
-            status_code=404,
-            public_message="Sensor not found",
-            domain="sensor"
-        )
 
     return await sensor_data_repository.insert_sensor_data(payload)
 
