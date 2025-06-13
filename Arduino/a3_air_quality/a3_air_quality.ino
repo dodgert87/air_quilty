@@ -62,6 +62,7 @@ int port = 1883;
 const char topic[] = "A3/AirQuality/Sensor1";
 uint8_t qos = 2;
 String message = "";
+#define SENSOR_ID "sensor1"
 
 // Please use "arduino_secrets.h" for your WiFi credentials
 const char *ssid = SECRET_SSID;
@@ -100,10 +101,10 @@ void setup() {
 
   // You can provide a unique client ID, if not set the library uses
   // Arduino-millis() Each client must have a unique client ID
-  mqttClient.setId("S1");
+  mqttClient.setId(SENSOR_ID);
 
   // You can provide a username and password for authentication
-  // mqttClient.setUsernamePassword("username", "password");
+  mqttClient.setUsernamePassword(SECRET_USERNAME, SECRET_PASSWORD);
 
   Serial.print("Attempting to connect to the MQTT broker: ");
   Serial.println(broker);
@@ -332,7 +333,7 @@ void dataToJson() {
   StaticJsonDocument<512> doc;
 
   doc["timestamp"] = timestamp;
-  doc["sensorid"] = "sensor1";
+  doc["sensorid"] = SENSOR_ID;
   doc["pm1_0"] = currentData.pm1_0;
   doc["pm2_5"] = currentData.pm2_5;
   doc["pm10"] = currentData.pm10;
