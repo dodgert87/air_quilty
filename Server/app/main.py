@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -13,13 +14,19 @@ from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
 from app.utils.logging_config import setup_logging
+from app.domain.mqtt_listener import listen_to_mqtt
+
+
 
 setup_logging() # Initialize logging configuration
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    task = asyncio.create_task(listen_to_mqtt())
     yield
+    task.cancel()  # Cleanup if needed
+
 
 
 middleware = [
@@ -38,6 +45,7 @@ app.include_router(versioned_router)
 app.add_exception_handler(AppException, app_exception_handler) # type: ignore
 app.add_exception_handler(RequestValidationError, validation_error_handler) # type: ignore
 app.add_exception_handler(Exception, fallback_exception_handler)
+
 
 @app.get("/")
 async def read_root():

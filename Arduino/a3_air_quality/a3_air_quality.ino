@@ -1,12 +1,11 @@
 #include "arduino_secrets.h"
-#include <Wire.h>
 #include <WiFi.h>
+#include <Wire.h>
 #include <time.h>
 // Libraries that require installation
-#include <apc1.h>
-#include <ArduinoMqttClient.h>
 #include <ArduinoJson.h>
-
+#include <ArduinoMqttClient.h>
+#include <apc1.h>
 
 // Collected sensor data
 struct airQualityData {
@@ -65,15 +64,16 @@ uint8_t qos = 2;
 String message = "";
 
 // Please use "arduino_secrets.h" for your WiFi credentials
-const char* ssid = SECRET_SSID;
-const char* password = SECRET_PASS;
+const char *ssid = SECRET_SSID;
+const char *password = SECRET_PASS;
 
-const char* ntpServer = "pool.ntp.org";           // NTP server for fetching time
-const char* tz = "EET-2EEST,M3.5.0/3,M10.5.0/4";  // Timezone string for Europe/Helsinki
-const long interval = 10000;                      // Interval for reading sensors (ms)
-int status = WL_IDLE_STATUS;                      // Default status for WiFi
-unsigned long previousMillis = 0;                 // Time on last program cycle
-String timestamp;                                 // Timestamp for sensor data
+const char *ntpServer = "pool.ntp.org"; // NTP server for fetching time
+const char *tz =
+    "EET-2EEST,M3.5.0/3,M10.5.0/4"; // Timezone string for Europe/Helsinki
+const long interval = 10000;        // Interval for reading sensors (ms)
+int status = WL_IDLE_STATUS;        // Default status for WiFi
+unsigned long previousMillis = 0;   // Time on last program cycle
+String timestamp;                   // Timestamp for sensor data
 
 APC1 apc1;
 
@@ -92,15 +92,14 @@ void setup() {
   Wire.write(0xb1);
   Wire.endTransmission();
 
-
   connectToWifi();
   printCurrentNet();
   // Uses NTP server to fetch time and save it to onboard RTC
   configTzTime(tz, ntpServer);
   printLocalTime();
 
-  // You can provide a unique client ID, if not set the library uses Arduino-millis()
-  // Each client must have a unique client ID
+  // You can provide a unique client ID, if not set the library uses
+  // Arduino-millis() Each client must have a unique client ID
   mqttClient.setId("S1");
 
   // You can provide a username and password for authentication
@@ -178,18 +177,14 @@ String createTimestamp() {
   // C language structure containing calendar date and time
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    return "0000-00-00 00:00:00";  // Default if no time available
+    return "0000-00-00 00:00:00"; // Default if no time available
   }
 
   char timestamp[25];
   // Fancy C funtion to format time into ISO date string
   snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d",
-           timeinfo.tm_year + 1900,
-           timeinfo.tm_mon + 1,
-           timeinfo.tm_mday,
-           timeinfo.tm_hour,
-           timeinfo.tm_min,
-           timeinfo.tm_sec);
+           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
   return String(timestamp);
 }
@@ -217,7 +212,8 @@ void readSensors() {
   // Combine two bytes of data and convert to float
   currentData.co2 = (float)((uint16_t)data[0] << 8 | data[1]);
   // Convert T in degC
-  currentData.temp = -45 + 175 * (float)((uint16_t)data[3] << 8 | data[4]) / 65536;
+  currentData.temp =
+      -45 + 175 * (float)((uint16_t)data[3] << 8 | data[4]) / 65536;
   // Convert RH in %
   currentData.hum = 100 * (float)((uint16_t)data[6] << 8 | data[7]) / 65536;
 
@@ -361,8 +357,8 @@ void dataToJson() {
   doc["rs3"] = currentData.rs3;
   doc["aqi"] = currentData.aqi;
   doc["co2"] = currentData.co2;
-  doc["temp"] = currentData.temp;
-  doc["hum"] = currentData.hum;
+  doc["temperature"] = currentData.temp;
+  doc["humidity"] = currentData.hum;
 
   serializeJson(doc, message);
   // json to Serial for testing

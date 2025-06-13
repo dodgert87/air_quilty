@@ -1,41 +1,67 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, model_validator, conlist
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, conlist
 from app.constants.sensor_fields import ALLOWED_SENSOR_FIELDS
 
 
 
 class SensorDataIn(BaseModel):
-    device_id: UUID
-    timestamp: datetime
-    temperature: float
-    humidity: float
-    o2: float
+    # ───────────────────────── Core Identifiers ────────────────────────────
+    # The sensor sends "sensorid": "sensor1". Until you convert this to a
+    # real UUID, store a constant / random placeholder UUID.
+    device_id: UUID = Field(default_factory=uuid4, alias="sensorid")
+    timestamp: datetime = Field(alias="timestamp")
+
+    # ───────────────────────── Aggregated Metrics ──────────────────────────
+    temperature: float = Field(alias="temp")
+    humidity: float = Field(alias="hum")
+
     pm1_0: float
     pm2_5: float
     pm10: float
+
     tvoc: float
     eco2: float
     aqi: float
+
     pmInAir1_0: int
     pmInAir2_5: int
     pmInAir10: int
+
     particles0_3: int
     particles0_5: int
     particles1_0: int
     particles2_5: int
     particles5_0: int
     particles10: int
+
     compT: float
     compRH: float
     rawT: float
     rawRH: float
+
     rs0: int
     rs1: int
     rs2: int
     rs3: int
+
     co2: int
+
+
+    # ─── Override sensorid alias and map it to a fixed UUID ────────────────
+    @field_validator("device_id", mode="before")
+    @classmethod
+    def map_sensorid_to_uuid(cls, value):
+        # You can customize this mapping later
+        if isinstance(value, str) and value.startswith("sensor"):
+            return UUID("e1ca483b-60ca-4b95-b498-afd3617d6a31")
+        return value  # fallback to default parsing
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="ignore",
+    )
 
 
 class SensorDataOut(SensorDataIn):

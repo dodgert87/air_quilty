@@ -39,6 +39,16 @@ class Settings(BaseSettings):
     # ─── Pagination Settings ────────────────────────────────
     DEFAULT_PAGE_SIZE: int
 
+    # ─── MQTT Settings ───────────────────────────────────────
+    MQTT_BROKER: str
+    MQTT_PORT: int
+    MQTT_TOPIC: str
+    MQTT_QOS: int
+    MQTT_RECONNECT_TIMER: int
+
+    # ─── MQTT Auth Settings ─────────────────────────────────
+    MQTT_USERNAME: str | None = None
+    MQTT_PASSWORD: str | None = None
 
     # Go three levels up: utils → app → Server → .env
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]

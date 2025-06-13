@@ -3,6 +3,7 @@ import uuid
 from typing import Optional
 from fastapi import Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.transaction import run_in_transaction
 from app.models.rest_logs import HTTPMethod, LogDomain
 from app.infrastructure.database.rest_log_repository import insert_rest_log
 from loguru import logger
@@ -84,3 +85,29 @@ def pretty_log_to_console(
     logger.info(f"├── <cyan>Duration</cyan>  : {duration_ms} ms")
     logger.info(f"├── <cyan>User ID</cyan>   : {user_id}")
     logger.info(f"└── <cyan>Error</cyan>     : {error_msg or 'None'}")
+
+
+async def log_background_task_error(
+    *,
+    domain: LogDomain,
+    error_message: str,
+    context_label: str,
+    user_id: uuid.UUID | None = None
+) -> None:
+    try:
+        async with run_in_transaction() as session:
+            await insert_rest_log(
+                session=session,
+                method=HTTPMethod("MQTT"),  # Pseudo-method
+                endpoint=f"[BACKGROUND:{context_label}]",
+                domain=domain,
+                user_id=user_id,
+                ip_address="local",
+                request_body={},
+                response_status=500,
+                response_time_ms=0,
+                user_agent="internal-background-task",
+                error_message=error_message,
+            )
+    except Exception as e:
+        logger.exception("Failed to log background task error to DB")

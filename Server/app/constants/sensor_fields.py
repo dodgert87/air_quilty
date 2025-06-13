@@ -1,6 +1,6 @@
 ALLOWED_SENSOR_FIELDS = [
     # Core
-    "temperature", "humidity", "o2", "pm1_0", "pm2_5", "pm10",
+    "temperature", "humidity", "pm1_0", "pm2_5", "pm10",
     "tvoc", "eco2", "aqi",
     # Extended
     "pmInAir1_0", "pmInAir2_5", "pmInAir10",

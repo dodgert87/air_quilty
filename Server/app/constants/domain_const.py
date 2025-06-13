@@ -7,6 +7,7 @@ class HTTPMethod(str, enum.Enum):
     PUT = "PUT"
     DELETE = "DELETE"
     PATCH = "PATCH"
+    MQTT = "MQTT"
 
 class LogDomain(str, enum.Enum):
     AUTH = "auth"

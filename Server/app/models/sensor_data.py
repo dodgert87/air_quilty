@@ -18,7 +18,6 @@ class SensorData(Base):
     # Core metrics
     temperature: Mapped[float]
     humidity: Mapped[float]
-    o2: Mapped[float]
     pm1_0: Mapped[float]
     pm2_5: Mapped[float]
     pm10: Mapped[float]
