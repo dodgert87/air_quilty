@@ -1,9 +1,9 @@
 from uuid import UUID
-from app.models.sensor import Sensor
-from app.infrastructure.database import sensor_repository
-from app.infrastructure.database import sensor_data_repository
+from app.models.DB_tables.sensor import Sensor
+from app.infrastructure.database.repository import sensor_repository
+from app.infrastructure.database.repository import sensor_data_repository
 from app.domain.pagination import paginate_query
-from app.models.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
 from app.utils.config import settings
 from app.utils.exceptions_base import AppException
 

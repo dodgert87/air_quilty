@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 import uuid
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 class APIKey(Base):
     __tablename__ = "api_keys"

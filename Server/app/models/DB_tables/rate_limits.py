@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 import uuid
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 class ProtocolEnum(str, enum.Enum):
     rest = "rest"

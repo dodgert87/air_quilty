@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from app.models.sensor_schemas import (
+from app.models.schemas.rest.sensor_schemas import (
     SensorCreate, SensorUpdatePayload, SensorIdPayload, SensorOut
 )
 from app.domain.sensor_logic import (

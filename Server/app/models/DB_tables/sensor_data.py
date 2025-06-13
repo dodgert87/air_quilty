@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timezone
 import uuid
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 
 

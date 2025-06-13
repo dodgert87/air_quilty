@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from sqlalchemy import select
 from uuid import UUID
-from app.models.sensor import Sensor
+from app.models.DB_tables.sensor import Sensor
 from app.infrastructure.database.transaction import run_in_transaction
-from app.models.sensor_schemas import SensorCreate, SensorUpdate
+from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorUpdate
 from app.utils.exceptions_base import AppException
 
 

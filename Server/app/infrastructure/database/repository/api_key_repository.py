@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.api_keys import APIKey
+from app.models.DB_tables.api_keys import APIKey
 from app.utils.exceptions_base import AppException, AuthConflictError
 
 

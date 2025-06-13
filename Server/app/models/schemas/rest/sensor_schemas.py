@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 class SensorCreate(BaseModel):
-    senosr_id: UUID
+    sensor_id: UUID
     name: str
     location: Optional[str] = None
     model: Optional[str] = None

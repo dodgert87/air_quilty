@@ -1,7 +1,7 @@
 from uuid import UUID
-from app.api.rest.sensor_metadata import list_all_sensors
-from app.models.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
-from app.infrastructure.database import sensor_repository
+from app.models.DB_tables.sensor import Sensor
+from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
+from app.infrastructure.database.repository import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
 
 
@@ -15,7 +15,11 @@ async def get_sensor_by_id(sensor_id: UUID):
         raise SensorNotFoundError(sensor_id)
     return sensor
 
-
+async def safe_get_sensor_by_id(sensor_id: UUID) -> Sensor | None:
+    try:
+        return await get_sensor_by_id(sensor_id)
+    except SensorNotFoundError:
+        return None
 async def list_sensors():
     return await sensor_repository.fetch_all_sensors()
 
@@ -34,7 +38,7 @@ async def delete_sensor(sensor_id: UUID):
     return True
 
 async def list_sensors_with_placeholder() -> list[SensorOut]:
-    all_sensors = await list_all_sensors()
+    all_sensors = await sensor_repository.fetch_all_sensors()
     return [
         SensorOut.model_validate(s)
         for s in all_sensors

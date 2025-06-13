@@ -2,7 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from app.domain.auth_logic import validate_token_and_get_user
-from app.models.user import RoleEnum
+from app.models.DB_tables.user import RoleEnum
 from app.utils.config import settings
 
 base = settings.API_VERSION

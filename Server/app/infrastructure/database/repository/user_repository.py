@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select, update
-from app.models.user import User
+from app.models.DB_tables.user import User
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from app.utils.exceptions_base import AppException

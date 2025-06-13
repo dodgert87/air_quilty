@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.utils.exceptions_base import AppException
-from app.models.rest_logs import LogDomain
+from app.models.DB_tables.rest_logs import LogDomain
 from app.utils.logger_utils import log_rest
 from app.infrastructure.database.transaction import run_in_transaction
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY, HTTP_500_INTERNAL_SERVER_ERROR
