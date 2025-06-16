@@ -1,7 +1,7 @@
 from app.models.schemas.graphQL.sensor_meta_data_query import DateRange, SensorMetadataQuery
 from app.models.schemas.graphQL.Sensor_data_query import SensorDataAdvancedQuery
 from app.models.schemas.graphQL.inputs import SensorDataQueryInput, FieldRangeInput, SensorMetadataQueryInput
-
+from app.utils.config import settings
 
 def map_graphql_to_pydantic_sensor_data_query(
     gql_input: SensorDataQueryInput
@@ -35,9 +35,8 @@ def map_graphql_to_pydantic_sensor_data_query(
         models=gql_input.model_filter,
         is_active=gql_input.is_active,
         page=gql_input.page,
-        page_size=25,  # You can default or configure this elsewhere
+        page_size=min(gql_input.page_size or 10, settings.MAX_PAGE_SIZE)
     )
-
 
 
 def map_graphql_to_pydantic_metadata_query(
