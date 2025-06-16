@@ -1,3 +1,8 @@
+from app.utils.logging_config import setup_logging
+setup_logging()
+
+import logging
+from sqlalchemy.exc import SQLAlchemyError
 from app.infrastructure.database.repository import secret_repository, user_repository
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.hashing import hash_value
@@ -15,11 +20,6 @@ from app.models.DB_tables.webhook_logs import WebhookLog
 from app.models.DB_tables.rest_logs import RestLog
 from app.models.DB_tables.graphql_logs import GraphQLLog
 from app.models.DB_tables.sensor import Sensor
-from app.models.DB_tables.sensor_data import SensorData
-
-
-import logging
-from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def init_db():
         logger.error(f"Unexpected error during DB init: {ex}")
         return
 
-    #  Bootstrap admin user within a transaction
+    # Bootstrap admin user
     try:
         async with run_in_transaction() as session:
             existing = await user_repository.get_user_by_email(session, settings.ADMIN_EMAIL)

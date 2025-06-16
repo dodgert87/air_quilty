@@ -20,9 +20,10 @@ class SensorUpdate(BaseModel):
 
 
 class SensorOut(SensorCreate):
-    id: UUID
     created_at: datetime
     updated_at: datetime
+    class Config:
+        from_attributes = True
 
 
 class SensorIdPayload(BaseModel):

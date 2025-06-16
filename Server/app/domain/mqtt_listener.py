@@ -83,7 +83,7 @@ async def listen_to_mqtt() -> None:
 
 
                         await create_sensor_data_entry(data)
-                        logger.info(f"Sensor data stored from {data.device_id}")
+                        #logger.info(f"Sensor data stored from {data.device_id}")
                         mqtt_state.is_running = True
                         mqtt_state.last_message_at = datetime.now(timezone.utc)
                         mqtt_state.last_device_id = data.device_id

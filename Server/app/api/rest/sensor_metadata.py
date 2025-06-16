@@ -27,6 +27,7 @@ async def list_all_sensors():
     return await list_sensors()
 
 
+
 @router.put("/admin/update", response_model=SensorOut)
 async def update_sensor_entry(payload: SensorUpdatePayload):
     return await update_sensor(payload.sensor_id, payload.update)

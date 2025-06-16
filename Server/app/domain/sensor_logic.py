@@ -1,9 +1,13 @@
+from typing import List
 from uuid import UUID
+from app.domain.pagination import paginate_query
+from app.infrastructure.database.repository.sensor_metadata_graphql_repository import sensor_metadata_graphql_repository
+from app.models.schemas.graphQL.sensor_schemas import SensorMetadataQuery
 from app.models.DB_tables.sensor import Sensor
 from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
 from app.infrastructure.database.repository import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
-
+from app.utils.config import settings
 
 async def create_sensor(sensor_data: SensorCreate):
     return await sensor_repository.insert_sensor(sensor_data)
@@ -20,6 +24,7 @@ async def safe_get_sensor_by_id(sensor_id: UUID) -> Sensor | None:
         return await get_sensor_by_id(sensor_id)
     except SensorNotFoundError:
         return None
+
 async def list_sensors():
     return await sensor_repository.fetch_all_sensors()
 
@@ -44,3 +49,12 @@ async def list_sensors_with_placeholder() -> list[SensorOut]:
         for s in all_sensors
         if s.name == "UNKNOWN"
     ]
+
+async def query_sensor_metadata_advanced(payload: SensorMetadataQuery):
+    query = await sensor_metadata_graphql_repository.build_sensor_metadata_query(payload)
+    return await paginate_query(
+        query,
+        page=payload.page,
+        schema=SensorOut,
+        page_size=payload.page_size or settings.DEFAULT_PAGE_SIZE
+    )

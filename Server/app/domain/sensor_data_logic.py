@@ -1,4 +1,6 @@
 from uuid import UUID
+from app.infrastructure.database.repository import sensor_data_graphql_repository
+from app.models.schemas.graphQL.SensorDataAdvancedQuery import SensorDataAdvancedQuery
 from app.models.DB_tables.sensor import Sensor
 from app.infrastructure.database.repository import sensor_repository
 from app.infrastructure.database.repository import sensor_data_repository
@@ -21,7 +23,7 @@ async def create_sensor_data_entry(payload: SensorDataIn):
 async def get_latest_entries_for_sensors(sensor_ids: list[UUID] | None):
     if not sensor_ids:
         sensors: list[Sensor] = await sensor_repository.fetch_all_sensors()
-        sensor_ids = [sensor.id for sensor in sensors]
+        sensor_ids = [sensor.sensor_id for sensor in sensors]
 
     valid_ids = []
     for sid in sensor_ids:
@@ -53,3 +55,8 @@ async def get_all_data_by_sensor(payload: SensorQuery):
 
     query = await sensor_data_repository.search_by_sensor_id(payload.sensor_id)
     return await paginate_query(query, schema=SensorDataOut, page=payload.page, page_size=settings.DEFAULT_PAGE_SIZE)
+
+
+async def query_sensor_data_advanced(payload: SensorDataAdvancedQuery):
+    query = await sensor_data_graphql_repository.build_sensor_data_query(payload)
+    return await paginate_query(query, page=payload.page, schema=SensorDataOut, page_size=payload.page_size or settings.DEFAULT_PAGE_SIZE)
