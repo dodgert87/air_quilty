@@ -2,8 +2,8 @@ import strawberry
 from uuid import UUID
 
 from app.utils.mappers import map_graphql_to_pydantic_metadata_query, map_graphql_to_pydantic_sensor_data_query
-from .types import PaginatedSensorMetadata, Sensor, SensorData, PaginatedSensorData
-from .inputs import SensorDataQueryInput, SensorMetadataQueryInput
+from app.models.schemas.graphQL.types import PaginatedSensorMetadata, Sensor, SensorData, PaginatedSensorData
+from app.models.schemas.graphQL.inputs import SensorDataQueryInput, SensorMetadataQueryInput
 from loguru import logger
 
 # Import domain schemas

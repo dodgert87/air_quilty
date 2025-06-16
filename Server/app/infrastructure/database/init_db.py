@@ -3,7 +3,7 @@ setup_logging()
 
 import logging
 from sqlalchemy.exc import SQLAlchemyError
-from app.infrastructure.database.repository import secret_repository, user_repository
+from app.infrastructure.database.repository.restAPI import secret_repository, user_repository
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.hashing import hash_value
 from app.utils.secret_utils import generate_secret, get_secret_expiry

@@ -1,5 +1,5 @@
 from strawberry.fastapi import GraphQLRouter
-from app.models.schemas.graphQL.main_schema import schema # type: ignore
+from app.api.graphql.main_schema import schema # type: ignore
 
 # Create Strawberry GraphQL router
 graphql_router = GraphQLRouter(

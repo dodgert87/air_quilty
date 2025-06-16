@@ -1,6 +1,6 @@
 from typing import Sequence
 from sqlalchemy import and_, select
-from app.models.schemas.graphQL.sensor_schemas import SensorMetadataQuery
+from app.models.schemas.graphQL.sensor_meta_data_query import SensorMetadataQuery
 from app.models.DB_tables.sensor import Sensor
 from app.models.schemas.rest.sensor_schemas import SensorOut
 from app.infrastructure.database.transaction import run_in_transaction

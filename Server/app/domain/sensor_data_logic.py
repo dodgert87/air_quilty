@@ -1,9 +1,9 @@
 from uuid import UUID
-from app.infrastructure.database.repository import sensor_data_graphql_repository
-from app.models.schemas.graphQL.SensorDataAdvancedQuery import SensorDataAdvancedQuery
+from app.infrastructure.database.repository.graphQL import sensor_data_graphql_repository
+from app.models.schemas.graphQL.Sensor_data_query import SensorDataAdvancedQuery
 from app.models.DB_tables.sensor import Sensor
-from app.infrastructure.database.repository import sensor_repository
-from app.infrastructure.database.repository import sensor_data_repository
+from app.infrastructure.database.repository.restAPI import sensor_repository
+from app.infrastructure.database.repository.restAPI import sensor_data_repository
 from app.domain.pagination import paginate_query
 from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
 from app.utils.config import settings

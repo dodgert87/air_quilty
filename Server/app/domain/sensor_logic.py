@@ -1,11 +1,11 @@
 from typing import List
 from uuid import UUID
 from app.domain.pagination import paginate_query
-from app.infrastructure.database.repository.sensor_metadata_graphql_repository import sensor_metadata_graphql_repository
-from app.models.schemas.graphQL.sensor_schemas import SensorMetadataQuery
+from app.infrastructure.database.repository.graphQL.sensor_metadata_graphql_repository import sensor_metadata_graphql_repository
+from app.models.schemas.graphQL.sensor_meta_data_query import SensorMetadataQuery
 from app.models.DB_tables.sensor import Sensor
 from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
-from app.infrastructure.database.repository import sensor_repository
+from app.infrastructure.database.repository.restAPI import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
 from app.utils.config import settings
 

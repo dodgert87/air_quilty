@@ -1,5 +1,5 @@
-from app.models.schemas.graphQL.sensor_schemas import DateRange, SensorMetadataQuery
-from app.models.schemas.graphQL.SensorDataAdvancedQuery import SensorDataAdvancedQuery
+from app.models.schemas.graphQL.sensor_meta_data_query import DateRange, SensorMetadataQuery
+from app.models.schemas.graphQL.Sensor_data_query import SensorDataAdvancedQuery
 from app.models.schemas.graphQL.inputs import SensorDataQueryInput, FieldRangeInput, SensorMetadataQueryInput
 
 
@@ -46,8 +46,8 @@ def map_graphql_to_pydantic_metadata_query(
     return SensorMetadataQuery(
         sensor_ids=gql_input.sensor_ids,
         name_filter=gql_input.name_filter,
-        locations=gql_input.location_filter,
-        models=gql_input.model_filter,
+        locations=gql_input.location_filter,  # type: ignore
+        models=gql_input.model_filter, # type: ignore
         is_active=gql_input.is_active,
         created_at=DateRange(
             after=gql_input.created_at.after if gql_input.created_at else None,

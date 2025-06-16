@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.models.DB_tables.sensor_data import SensorData
 from app.models.DB_tables.sensor import Sensor
-from app.models.schemas.graphQL.SensorDataAdvancedQuery import SensorDataAdvancedQuery
+from app.models.schemas.graphQL.Sensor_data_query import SensorDataAdvancedQuery
 from app.infrastructure.database.transaction import run_in_transaction
 
 
