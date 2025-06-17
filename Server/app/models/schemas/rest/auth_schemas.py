@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.user import RoleEnum
+from app.models.DB_tables.user import RoleEnum
 
 class LoginRequest(BaseModel):
     email: EmailStr

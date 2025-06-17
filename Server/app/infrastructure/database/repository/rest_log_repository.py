@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
-from app.models.rest_logs import RestLog
-from app.models.rest_logs import HTTPMethod, LogDomain
+from app.models.DB_tables.rest_logs import RestLog, HTTPMethod, LogDomain
 from typing import Optional
 import uuid
 from datetime import datetime, timezone

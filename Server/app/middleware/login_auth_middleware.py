@@ -1,8 +1,9 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from app.utils.exceptions_base import AppException
 from app.domain.auth_logic import validate_token_and_get_user
-from app.models.user import RoleEnum
+from app.models.DB_tables.user import RoleEnum
 from app.utils.config import settings
 
 base = settings.API_VERSION
@@ -38,6 +39,12 @@ class LoginAuthMiddleware(BaseHTTPMiddleware):
                 user = await validate_token_and_get_user(token)
                 request.state.user = user
                 request.state.user_id = user.id
+
+            except AppException as e:
+                return JSONResponse(
+                    status_code=e.status_code,
+                    content={"error": "Invalid or missing authentication."}
+                )
             except ValueError as e:
                 return JSONResponse(status_code=401, content={"detail": str(e)})
         else:

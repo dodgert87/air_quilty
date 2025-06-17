@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 import uuid
 import enum
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 class WebSocketEvent(str, enum.Enum):
     connect = "connect"

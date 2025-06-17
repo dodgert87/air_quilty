@@ -2,20 +2,24 @@ import logging
 import sys
 from loguru import logger
 
+
 class InterceptHandler(logging.Handler):
     def emit(self, record):
         # Map standard logging levels to loguru levels
-        level = logger.level(record.levelname).name if record.levelname in logger._core.levels else record.levelno # type: ignore
+        level = (
+            logger.level(record.levelname).name
+            if record.levelname in logger._core.levels # type: ignore
+            else record.levelno  # type: ignore
+        )
         logger.opt(depth=6, exception=record.exc_info).log(level, record.getMessage())
 
 def setup_logging():
     logger.remove()  # Remove default log handler
 
-    #  Intercept standard logging to loguru
+    # Intercept stdlib logs to loguru
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING, force=True)
 
-    # Silencing specific modules (you had this already, keeping it)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    # Silencing specific noisy libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
     logging.getLogger("fastapi").setLevel(logging.WARNING)
@@ -23,7 +27,12 @@ def setup_logging():
     logging.getLogger("pydantic").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-    #  Pretty console logging
+    # Disable all SQLAlchemy subloggers (only allow WARN and ERROR via loguru)
+    for name in logging.root.manager.loggerDict:
+        if name.startswith("sqlalchemy"):
+            logging.getLogger(name).disabled = True
+
+    # Pretty console logging
     logger.add(
         sys.stdout,
         format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -36,6 +45,7 @@ def setup_logging():
         colorize=True,
     )
 
+"""
     #  Optional: JSON file logging
     logger.add(
         "logs/structured.json",
@@ -47,3 +57,4 @@ def setup_logging():
         backtrace=True,
         diagnose=True,
     )
+"""

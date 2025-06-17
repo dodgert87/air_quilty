@@ -4,8 +4,8 @@ from typing import Optional
 from fastapi import Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.transaction import run_in_transaction
-from app.models.rest_logs import HTTPMethod, LogDomain
-from app.infrastructure.database.rest_log_repository import insert_rest_log
+from app.models.DB_tables.rest_logs import HTTPMethod, LogDomain
+from app.infrastructure.database.repository.rest_log_repository import insert_rest_log
 from loguru import logger
 
 

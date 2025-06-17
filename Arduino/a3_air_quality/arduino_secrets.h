@@ -3,8 +3,8 @@
 // Add Wifi password
 #define SECRET_PASS ""
 // Add MQTT Broker IP
-#define BROKER_IP ""
-// USername for MQTT connection
+#define BROKER_IP "";
+// Add MQTT Broker username
 #define SECRET_USERNAME ""
-// Password for MQTT connection
+// Add MQTT Broker password
 #define SECRET_PASSWORD ""

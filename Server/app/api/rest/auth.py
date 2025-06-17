@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, status, Depends
 from typing import List
 
-from app.models.auth_schemas import (
+from app.models.schemas.rest.auth_schemas import (
     APIKeyDeleteRequest, APIKeyRequest, ChangePasswordRequest, LoginRequest,
     LoginResponse, OnboardResult, UserLookupPayload, UserOnboardRequest, UserResponse
 )

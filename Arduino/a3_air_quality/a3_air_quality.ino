@@ -78,6 +78,7 @@ char connectionTopic[80] = "A3/AirQuality/Connection/";
 
 uint8_t qos = 2;
 String message = "";
+#define SENSOR_ID "sensor1"
 
 // Please use "arduino_secrets.h" for your WiFi credentials
 const char *ssid = SECRET_SSID;

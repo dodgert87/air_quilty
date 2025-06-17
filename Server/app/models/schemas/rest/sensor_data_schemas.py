@@ -10,12 +10,12 @@ class SensorDataIn(BaseModel):
     # ───────────────────────── Core Identifiers ────────────────────────────
     # The sensor sends "sensorid": "sensor1". Until you convert this to a
     # real UUID, store a constant / random placeholder UUID.
-    device_id: UUID = Field(default_factory=uuid4, alias="sensorid")
+    device_id: UUID = Field(alias="sensorid")
     timestamp: datetime = Field(alias="timestamp")
 
     # ───────────────────────── Aggregated Metrics ──────────────────────────
-    temperature: float = Field(alias="temp")
-    humidity: float = Field(alias="hum")
+    temperature: float
+    humidity: float
 
     pm1_0: float
     pm2_5: float
@@ -50,13 +50,6 @@ class SensorDataIn(BaseModel):
 
 
     # ─── Override sensorid alias and map it to a fixed UUID ────────────────
-    @field_validator("device_id", mode="before")
-    @classmethod
-    def map_sensorid_to_uuid(cls, value):
-        # You can customize this mapping later
-        if isinstance(value, str) and value.startswith("sensor"):
-            return UUID("e1ca483b-60ca-4b95-b498-afd3617d6a31")
-        return value  # fallback to default parsing
 
     model_config = ConfigDict(
         populate_by_name=True,

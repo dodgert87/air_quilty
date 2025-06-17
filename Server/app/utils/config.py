@@ -38,6 +38,7 @@ class Settings(BaseSettings):
 
     # ─── Pagination Settings ────────────────────────────────
     DEFAULT_PAGE_SIZE: int
+    MAX_PAGE_SIZE: int  # Maximum allowed page size for queries
 
     # ─── MQTT Settings ───────────────────────────────────────
     MQTT_BROKER: str

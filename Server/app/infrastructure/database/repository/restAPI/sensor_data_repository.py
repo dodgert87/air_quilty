@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy import desc, select, and_
-from app.models.sensor_data import SensorData
-from app.models.sensor_data_schemas import SensorDataIn, SensorRangeQuery, SensorTimestampQuery
+from app.models.DB_tables.sensor_data import SensorData
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorRangeQuery, SensorTimestampQuery
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.exceptions_base import AppException
 

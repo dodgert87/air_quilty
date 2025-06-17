@@ -9,10 +9,12 @@ from aiomqtt import Client, MqttError
 from loguru import logger
 from pydantic import ValidationError
 
+from app.domain.sensor_logic import create_sensor, get_sensor_by_id, safe_get_sensor_by_id
+from app.models.schemas.rest.sensor_schemas import SensorCreate
 from app.utils.config import settings
-from app.models.sensor_data_schemas import SensorDataIn
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn
 from app.domain.sensor_data_logic import create_sensor_data_entry
-from app.models.rest_logs import LogDomain
+from app.models.DB_tables.rest_logs import LogDomain
 from app.utils.logger_utils import log_background_task_error
 
 class MQTTListenerState:
@@ -66,8 +68,22 @@ async def listen_to_mqtt() -> None:
                         logger.debug(f"MQTT payload parsed: {payload_dict}")
 
                         data = SensorDataIn(**payload_dict)
+
+                        # Check if the sensor exists, else create a placeholder
+                        if not await safe_get_sensor_by_id(data.device_id):
+                            placeholder = SensorCreate(
+                                sensor_id=data.device_id,
+                                name="UNKNOWN",
+                                location="PENDING",
+                                model="GENERIC",
+                                is_active=True
+                            )
+                            await create_sensor(placeholder)
+                            logger.info(f"Created placeholder sensor for device {data.device_id}")
+
+
                         await create_sensor_data_entry(data)
-                        logger.info(f"Sensor data stored from {data.device_id}")
+                        #logger.info(f"Sensor data stored from {data.device_id}")
                         mqtt_state.is_running = True
                         mqtt_state.last_message_at = datetime.now(timezone.utc)
                         mqtt_state.last_device_id = data.device_id

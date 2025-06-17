@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 import uuid
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 class WebhookLog(Base):
     __tablename__ = "webhook_logs"

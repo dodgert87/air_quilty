@@ -13,6 +13,8 @@ from app.utils.config import settings
 from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
+from app.api.graphql.router import graphql_router
+
 from app.utils.logging_config import setup_logging
 from app.domain.mqtt_listener import listen_to_mqtt
 
@@ -34,13 +36,16 @@ middleware = [
     Middleware(APIKeyAuthMiddleware),
     Middleware(RestLoggerMiddleware)
 ]
+api_prefix = f"/api/{settings.API_VERSION}"
 
-app = FastAPI(lifespan=lifespan, middleware=middleware)
+app = FastAPI(title="Air Quality API", lifespan=lifespan, middleware=middleware)
 
-versioned_router = APIRouter(prefix=f"/api/{settings.API_VERSION}")
+versioned_router = APIRouter(prefix=api_prefix)
 versioned_router.include_router(rest_router)
 
 app.include_router(versioned_router)
+app.include_router(graphql_router, prefix=f"{api_prefix}/sensor/data/graphql")
+
 
 app.add_exception_handler(AppException, app_exception_handler) # type: ignore
 app.add_exception_handler(RequestValidationError, validation_error_handler) # type: ignore

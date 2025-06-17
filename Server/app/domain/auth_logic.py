@@ -2,19 +2,19 @@ from typing import List, Optional
 from uuid import UUID
 import re
 
-from app.infrastructure.database import secret_repository
-from app.infrastructure.database import user_repository
+from app.infrastructure.database.repository.restAPI import secret_repository
+from app.infrastructure.database.repository.restAPI import user_repository
 from app.utils.validators import validate_password_complexity
-from app.models.user_secrets import UserSecret
-from app.models.user import User
-from app.infrastructure.database import api_key_repository
+from app.models.DB_tables.user_secrets import UserSecret
+from app.models.DB_tables.user import User
+from app.infrastructure.database.repository.restAPI import api_key_repository
 from app.utils.jwt_utils import decode_jwt, decode_jwt_unverified, generate_jwt
-from app.models.auth_schemas import LoginResponse, NewUserInput, OnboardResult
+from app.models.schemas.rest.auth_schemas import LoginResponse, NewUserInput, OnboardResult
 from app.utils.secret_utils import generate_api_key, generate_secret, get_api_key_expiry, get_secret_expiry
 from app.utils.hashing import hash_value, verify_value
 from app.utils.config import settings
-from app.infrastructure.database.user_repository import get_user_by_email, create_user, get_user_by_id, update_last_login
-from app.infrastructure.database.secret_repository import create_user_secret, get_all_active_user_secrets
+from app.infrastructure.database.repository.restAPI.user_repository import get_user_by_email, create_user, get_user_by_id, update_last_login
+from app.infrastructure.database.repository.restAPI.secret_repository import create_user_secret, get_all_active_user_secrets
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.exceptions_base import AppException, AuthValidationError, UserNotFoundError, AuthConflictError
 

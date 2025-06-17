@@ -5,6 +5,7 @@ from datetime import datetime
 
 
 class SensorCreate(BaseModel):
+    sensor_id: UUID
     name: str
     location: Optional[str] = None
     model: Optional[str] = None
@@ -19,9 +20,10 @@ class SensorUpdate(BaseModel):
 
 
 class SensorOut(SensorCreate):
-    id: UUID
     created_at: datetime
     updated_at: datetime
+    class Config:
+        from_attributes = True
 
 
 class SensorIdPayload(BaseModel):

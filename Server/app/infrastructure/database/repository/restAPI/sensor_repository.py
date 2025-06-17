@@ -1,18 +1,32 @@
 from datetime import datetime, timezone
 from sqlalchemy import select
 from uuid import UUID
-from app.models.sensor import Sensor
+from app.models.DB_tables.sensor import Sensor
 from app.infrastructure.database.transaction import run_in_transaction
-from app.models.sensor_schemas import SensorCreate, SensorUpdate
+from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorUpdate
 from app.utils.exceptions_base import AppException
 
 
 async def insert_sensor(sensor_data: SensorCreate) -> Sensor:
     try:
         async with run_in_transaction() as session:
+            result = await fetch_sensor_by_id(sensor_data.sensor_id)
+            if result:
+                raise AppException(
+                    message=f"Sensor with ID {sensor_data.sensor_id} already exists.",
+                    status_code=409,
+                    public_message="Sensor already exists.",
+                    domain="sensor"
+                )
+
             sensor = Sensor(**sensor_data.model_dump())
             session.add(sensor)
             return sensor
+
+    except AppException:
+        # Don't override intentional custom exceptions
+        raise
+
     except Exception as e:
         raise AppException(
             message=f"DB insert failed: {e}",
@@ -20,7 +34,6 @@ async def insert_sensor(sensor_data: SensorCreate) -> Sensor:
             public_message="Failed to save sensor.",
             domain="sensor"
         )
-
 
 async def fetch_sensor_by_id(sensor_id: UUID) -> Sensor | None:
     try:

@@ -1,9 +1,11 @@
 from uuid import UUID
-from app.models.sensor import Sensor
-from app.infrastructure.database import sensor_repository
-from app.infrastructure.database import sensor_data_repository
+from app.infrastructure.database.repository.graphQL import sensor_data_graphql_repository
+from app.models.schemas.graphQL.Sensor_data_query import SensorDataAdvancedQuery
+from app.models.DB_tables.sensor import Sensor
+from app.infrastructure.database.repository.restAPI import sensor_repository
+from app.infrastructure.database.repository.restAPI import sensor_data_repository
 from app.domain.pagination import paginate_query
-from app.models.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
 from app.utils.config import settings
 from app.utils.exceptions_base import AppException
 
@@ -14,14 +16,6 @@ async def query_sensor_data_by_ranges(payload: SensorRangeQuery):
 
 
 async def create_sensor_data_entry(payload: SensorDataIn):
-    sensor = await sensor_repository.fetch_sensor_by_id(payload.device_id)
-    if not sensor:
-        raise AppException(
-            message=f"Sensor ID {payload.device_id} not found",
-            status_code=404,
-            public_message="Sensor not found",
-            domain="sensor"
-        )
 
     return await sensor_data_repository.insert_sensor_data(payload)
 
@@ -29,7 +23,7 @@ async def create_sensor_data_entry(payload: SensorDataIn):
 async def get_latest_entries_for_sensors(sensor_ids: list[UUID] | None):
     if not sensor_ids:
         sensors: list[Sensor] = await sensor_repository.fetch_all_sensors()
-        sensor_ids = [sensor.id for sensor in sensors]
+        sensor_ids = [sensor.sensor_id for sensor in sensors]
 
     valid_ids = []
     for sid in sensor_ids:
@@ -61,3 +55,8 @@ async def get_all_data_by_sensor(payload: SensorQuery):
 
     query = await sensor_data_repository.search_by_sensor_id(payload.sensor_id)
     return await paginate_query(query, schema=SensorDataOut, page=payload.page, page_size=settings.DEFAULT_PAGE_SIZE)
+
+
+async def query_sensor_data_advanced(payload: SensorDataAdvancedQuery):
+    query = await sensor_data_graphql_repository.build_sensor_data_query(payload)
+    return await paginate_query(query, page=payload.page, schema=SensorDataOut, page_size=payload.page_size or settings.DEFAULT_PAGE_SIZE)

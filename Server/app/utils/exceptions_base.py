@@ -29,6 +29,7 @@ class AuthError(AppException):
         )
 
 
+
 class SensorDataError(AppException):
     def __init__(self, message: str = "Sensor data fetch failed"):
         super().__init__(

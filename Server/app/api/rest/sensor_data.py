@@ -7,7 +7,7 @@ from app.domain.sensor_data_logic import (
     query_sensor_data_by_ranges,
     query_sensor_data_by_timestamps,
 )
-from app.models.sensor_data_schemas import (
+from app.models.schemas.rest.sensor_data_schemas import (
     SensorDataIn,
     SensorListInput,
     SensorQuery,

@@ -3,7 +3,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
-from app.models.user_secrets import UserSecret
+from app.models.DB_tables.user_secrets import UserSecret
 from app.utils.exceptions_base import AppException
 
 

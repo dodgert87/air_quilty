@@ -1,25 +1,25 @@
-from app.infrastructure.database import secret_repository, user_repository
+from app.utils.logging_config import setup_logging
+setup_logging()
+
+import logging
+from sqlalchemy.exc import SQLAlchemyError
+from app.infrastructure.database.repository.restAPI import secret_repository, user_repository
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.hashing import hash_value
 from app.utils.secret_utils import generate_secret, get_secret_expiry
 from app.utils.config import settings
 from .session import engine
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
-from app.models.sensor_data import SensorData
-from app.models.user import RoleEnum, User
-from app.models.api_keys import APIKey
-from app.models.rate_limits import RateLimit
-from app.models.user_secrets import UserSecret
-from app.models.webhook_logs import WebhookLog
-from app.models.rest_logs import RestLog
-from app.models.graphql_logs import GraphQLLog
-from app.models.sensor import Sensor
-from app.models.sensor_data import SensorData
-
-
-import logging
-from sqlalchemy.exc import SQLAlchemyError
+from app.models.DB_tables.sensor_data import SensorData
+from app.models.DB_tables.user import RoleEnum, User
+from app.models.DB_tables.api_keys import APIKey
+from app.models.DB_tables.rate_limits import RateLimit
+from app.models.DB_tables.user_secrets import UserSecret
+from app.models.DB_tables.webhook_logs import WebhookLog
+from app.models.DB_tables.rest_logs import RestLog
+from app.models.DB_tables.graphql_logs import GraphQLLog
+from app.models.DB_tables.sensor import Sensor
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def init_db():
         logger.error(f"Unexpected error during DB init: {ex}")
         return
 
-    #  Bootstrap admin user within a transaction
+    # Bootstrap admin user
     try:
         async with run_in_transaction() as session:
             existing = await user_repository.get_user_by_email(session, settings.ADMIN_EMAIL)

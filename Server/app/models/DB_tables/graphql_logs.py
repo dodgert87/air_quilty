@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 import uuid
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 class GraphQLLog(Base):
     __tablename__ = "graphql_logs"

@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from fastapi import Request
 from app.domain.auth_logic import validate_api_key
-from app.models.user import RoleEnum
+from app.models.DB_tables.user import RoleEnum
 from app.utils.config import settings
 
 base = settings.API_VERSION

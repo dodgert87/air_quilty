@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 from app.constants.domain_const import HTTPMethod, LogDomain
-from app.models.base import Base
+from app.models.DB_tables.base import Base
 
 
 

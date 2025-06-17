@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from app.models.sensor_schemas import (
+from app.models.schemas.rest.sensor_schemas import (
     SensorCreate, SensorUpdatePayload, SensorIdPayload, SensorOut
 )
 from app.domain.sensor_logic import (
-    create_sensor, get_sensor_by_id, list_sensors, update_sensor, delete_sensor
+    create_sensor, get_sensor_by_id, list_sensors, list_sensors_with_placeholder, update_sensor, delete_sensor
 )
 from app.domain.mqtt_listener import mqtt_state
 
@@ -27,6 +27,7 @@ async def list_all_sensors():
     return await list_sensors()
 
 
+
 @router.put("/admin/update", response_model=SensorOut)
 async def update_sensor_entry(payload: SensorUpdatePayload):
     return await update_sensor(payload.sensor_id, payload.update)
@@ -47,3 +48,10 @@ async def get_mqtt_listener_status():
             "message_count": mqtt_state.message_count
         }
     )
+
+@router.get("/unregistered", response_model=list[SensorOut])
+async def list_unregistered_sensors():
+    """
+    Returns all sensors that are auto-registered and pending admin update.
+    """
+    return await list_sensors_with_placeholder()
