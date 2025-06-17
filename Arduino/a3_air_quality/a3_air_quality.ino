@@ -2,10 +2,12 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <time.h>
+#include <Preferences.h>
 // Libraries that require installation
 #include <ArduinoJson.h>
 #include <ArduinoMqttClient.h>
 #include <apc1.h>
+#include "UUID.h"
 
 // Collected sensor data
 struct airQualityData {
@@ -40,6 +42,17 @@ struct airQualityData {
 // Create variable of struct to hold air quality data
 airQualityData currentData;
 
+Preferences preferences;
+UUID uuid;
+
+// Parameters for persistent NVS memory
+#define RW_MODE false
+#define UUID_LENGTH 36
+#define UUID_BUFFER_SIZE (UUID_LENGTH + 1)
+const char *storageName = "deviceInfo";
+const char *uuidKey = "deviceUUID";
+
+
 // macro definitions
 // make sure that we use the proper definition of NO_ERROR
 #ifdef NO_ERROR
@@ -59,7 +72,10 @@ MqttClient mqttClient(wifiClient);
 // MQTT
 const char broker[] = BROKER_IP;
 int port = 1883;
-const char topic[] = "A3/AirQuality/Sensor1";
+char deviceId[UUID_BUFFER_SIZE];
+char topic[64] = "A3/AirQuality/";
+char connectionTopic[80] = "A3/AirQuality/Connection/";
+
 uint8_t qos = 2;
 String message = "";
 
@@ -67,13 +83,12 @@ String message = "";
 const char *ssid = SECRET_SSID;
 const char *password = SECRET_PASS;
 
-const char *ntpServer = "pool.ntp.org"; // NTP server for fetching time
-const char *tz =
-    "EET-2EEST,M3.5.0/3,M10.5.0/4"; // Timezone string for Europe/Helsinki
-const long interval = 10000;        // Interval for reading sensors (ms)
-int status = WL_IDLE_STATUS;        // Default status for WiFi
-unsigned long previousMillis = 0;   // Time on last program cycle
-String timestamp;                   // Timestamp for sensor data
+const char *ntpServer = "pool.ntp.org";           // NTP server for fetching time
+const char *tz = "EET-2EEST,M3.5.0/3,M10.5.0/4";  // Timezone string for Europe/Helsinki
+const long interval = 10000;                      // Interval for reading sensors (ms)
+int status = WL_IDLE_STATUS;                      // Default status for WiFi
+unsigned long previousMillis = 0;                 // Time on last program cycle
+String timestamp;                                 // Timestamp for sensor data
 
 APC1 apc1;
 
@@ -98,24 +113,50 @@ void setup() {
   configTzTime(tz, ntpServer);
   printLocalTime();
 
+  // Open a namespace with read-write access
+  preferences.begin(storageName, RW_MODE);
+  bool doesExist = preferences.isKey(uuidKey);
+  // Generate a new UUID if one not found in the memory
+  // We avoid using String -objects for long term reliability
+  if (doesExist == false) {
+    Serial.println("no id found");
+    uuid.generate();
+    const char *uuidStr = uuid.toCharArray();
+    strncpy(deviceId, uuidStr, UUID_LENGTH);
+    deviceId[UUID_LENGTH] = '\0';  // Manually add null termination
+    preferences.putString(uuidKey, deviceId);
+  } else {
+    Serial.println("id found");
+    // Read existing UUID from the memory
+    char buffer[UUID_BUFFER_SIZE];
+    preferences.getString(uuidKey, buffer, UUID_BUFFER_SIZE);
+    strncpy(deviceId, buffer, UUID_LENGTH);
+    deviceId[UUID_LENGTH] = '\0';  // Manually add null termination
+  }
+
+  preferences.end();
+  Serial.println(deviceId);
   // You can provide a unique client ID, if not set the library uses
   // Arduino-millis() Each client must have a unique client ID
-  mqttClient.setId("S1");
+  mqttClient.setId(deviceId);
+  mqttClient.setKeepAliveInterval(30000);
+  // Set LWT message that activates if client loses MQTT connection
+  mqttClient.beginWill(topic, true, 1);
+  mqttClient.print("offline");
+  mqttClient.endWill();
 
+  // Create topic strings for MQTT
+  snprintf(topic, sizeof(topic), "A3/AirQuality/%s", deviceId);
+  Serial.println(topic);
+  snprintf(connectionTopic, sizeof(connectionTopic), "A3/AirQuality/Connection/%s", deviceId);
+  Serial.println(connectionTopic);
   // You can provide a username and password for authentication
-  // mqttClient.setUsernamePassword("username", "password");
+  mqttClient.setUsernamePassword(SECRET_USERNAME, SECRET_PASSWORD);
 
   Serial.print("Attempting to connect to the MQTT broker: ");
   Serial.println(broker);
 
-  while (!mqttClient.connect(broker, port)) {
-    Serial.print("MQTT connection failed! Error code = ");
-    Serial.println(mqttClient.connectError());
-    delay(1000);
-  }
-
-  Serial.println("You're connected to the MQTT broker!");
-  Serial.println();
+  connectToMQTT();
 }
 
 void loop() {
@@ -127,16 +168,23 @@ void loop() {
     timestamp = createTimestamp();
     // TEST PRINT
     Serial.println(createTimestamp());
+    Serial.println(deviceId);
+    Serial.println(topic);
+    Serial.println(connectionTopic);
     // Reconnect WiFi if connection drops
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("Connection lost! Attempting to reconnect..");
       connectToWifi();
     }
+    if (!mqttClient.connected()) {
+      Serial.println("Lost MQTT connection - reconnecting..");
+      connectToMQTT();
+    }
     readSensors();
 
     dataToJson();
 
-    sendMessage();
+    sendMQTTMessage();
   }
 }
 
@@ -177,7 +225,7 @@ String createTimestamp() {
   // C language structure containing calendar date and time
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    return "0000-00-00 00:00:00"; // Default if no time available
+    return "0000-00-00 00:00:00";  // Default if no time available
   }
 
   char timestamp[25];
@@ -213,7 +261,7 @@ void readSensors() {
   currentData.co2 = (float)((uint16_t)data[0] << 8 | data[1]);
   // Convert T in degC
   currentData.temp =
-      -45 + 175 * (float)((uint16_t)data[3] << 8 | data[4]) / 65536;
+    -45 + 175 * (float)((uint16_t)data[3] << 8 | data[4]) / 65536;
   // Convert RH in %
   currentData.hum = 100 * (float)((uint16_t)data[6] << 8 | data[7]) / 65536;
 
@@ -332,7 +380,7 @@ void dataToJson() {
   StaticJsonDocument<512> doc;
 
   doc["timestamp"] = timestamp;
-  doc["sensorid"] = "sensor1";
+  doc["sensorid"] = deviceId;
   doc["pm1_0"] = currentData.pm1_0;
   doc["pm2_5"] = currentData.pm2_5;
   doc["pm10"] = currentData.pm10;
@@ -366,15 +414,23 @@ void dataToJson() {
   return;
 }
 
-void sendMessage() {
-  if (!mqttClient.connected()) {
-    Serial.print("MQTT connection failed! Error code = ");
+void connectToMQTT() {
+
+  if (!mqttClient.connect(broker, port)) {
+    Serial.print("connecting failed, error code: ");
     Serial.println(mqttClient.connectError());
-    mqttClient.connect(broker, port);
-    delay(2000);
+    return;
   }
 
+  Serial.println("You're connected to the MQTT broker!");
   Serial.println();
+  // Publish connection status
+  mqttClient.beginMessage(connectionTopic, true, 1);
+  mqttClient.print("online");
+  mqttClient.endMessage();
+}
+
+void sendMQTTMessage() {
   Serial.print("Sending message to topic: ");
   Serial.println(topic);
   Serial.println();
