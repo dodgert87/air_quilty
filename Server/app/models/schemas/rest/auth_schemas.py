@@ -60,3 +60,29 @@ class UserResponse(BaseModel):
     role: RoleEnum
     created_at: datetime
     last_login: Optional[datetime]
+
+class SecretLabelQuery(BaseModel):
+    is_active: Optional[bool] = None
+
+class SecretCreateRequest(BaseModel):
+    label: str
+    expires_at: Optional[datetime] = None
+    is_active: Optional[bool] = True
+
+class SecretCreateResponse(BaseModel):
+    label: str
+    secret: str  # plain text, returned once
+
+class SecretLabelPayload(BaseModel):
+    label: str
+
+class SecretTogglePayload(BaseModel):
+    label: str
+    is_active: bool
+
+
+class SecretInfo(BaseModel):
+    label: str
+    is_active: bool
+    created_at: datetime
+    expires_at: Optional[datetime] = None

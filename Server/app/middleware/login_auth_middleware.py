@@ -17,6 +17,11 @@ PATH_ROLE_MAP = {
         RoleEnum.developer,
         RoleEnum.authenticated,
     ],
+    f"/api/{base}/auth/webhooks": [
+        RoleEnum.admin,
+        RoleEnum.developer,
+        RoleEnum.authenticated,
+    ],
 }
 
 class LoginAuthMiddleware(BaseHTTPMiddleware):
