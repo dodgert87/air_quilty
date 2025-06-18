@@ -8,8 +8,7 @@ from app.utils.exceptions_base import AppException
 
 async def search_by_attribute_ranges(payload: SensorRangeQuery):
     filters = []
-    selected_columns = [SensorData.timestamp, SensorData.device_id]
-
+    selected_columns = [SensorData.timestamp, SensorData.device_id] # Always include these
     for attr, bounds in payload.ranges.items():
         column = getattr(SensorData, attr)
         selected_columns.append(column)

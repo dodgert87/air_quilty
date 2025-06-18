@@ -9,6 +9,7 @@ from app.domain.sensor_data_logic import (
 )
 from app.models.schemas.rest.sensor_data_schemas import (
     SensorDataIn,
+    SensorDataPartialOut,
     SensorListInput,
     SensorQuery,
     SensorRangeQuery,
@@ -20,7 +21,7 @@ from app.domain.pagination import PaginatedResponse
 router = APIRouter(prefix="/sensor/data", tags=["Sensor Data"])
 
 
-@router.post("/by-ranges", response_model=PaginatedResponse)
+@router.post("/by-ranges", response_model=PaginatedResponse[SensorDataPartialOut], response_model_exclude_none=True)
 async def get_sensor_data_by_ranges(payload: SensorRangeQuery):
     return await query_sensor_data_by_ranges(payload)
 

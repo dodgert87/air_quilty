@@ -5,14 +5,14 @@ from app.models.DB_tables.sensor import Sensor
 from app.infrastructure.database.repository.restAPI import sensor_repository
 from app.infrastructure.database.repository.restAPI import sensor_data_repository
 from app.domain.pagination import paginate_query
-from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorDataPartialOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
 from app.utils.config import settings
 from app.utils.exceptions_base import AppException
 
 
 async def query_sensor_data_by_ranges(payload: SensorRangeQuery):
     query = await sensor_data_repository.search_by_attribute_ranges(payload)
-    return await paginate_query(query, page=payload.page, schema=SensorDataOut, page_size=settings.DEFAULT_PAGE_SIZE)
+    return await paginate_query(query, page=payload.page, schema=SensorDataPartialOut, page_size=settings.DEFAULT_PAGE_SIZE)
 
 
 async def create_sensor_data_entry(payload: SensorDataIn):

@@ -65,6 +65,51 @@ class SensorDataOut(SensorDataIn):
     }
 
 
+
+class SensorDataPartialOut(BaseModel):
+    device_id: UUID = Field(alias="sensorid")
+    timestamp: datetime
+
+    temperature: Optional[float] = None
+    humidity:    Optional[float] = None
+
+    pm1_0:   Optional[float] = None
+    pm2_5:   Optional[float] = None
+    pm10:    Optional[float] = None
+
+    tvoc:    Optional[float] = None
+    eco2:    Optional[float] = None
+    aqi:     Optional[float] = None
+
+    pmInAir1_0: Optional[int] = None
+    pmInAir2_5: Optional[int] = None
+    pmInAir10:  Optional[int] = None
+
+    particles0_3: Optional[int] = None
+    particles0_5: Optional[int] = None
+    particles1_0: Optional[int] = None
+    particles2_5: Optional[int] = None
+    particles5_0: Optional[int] = None
+    particles10:  Optional[int] = None
+
+    compT:  Optional[float] = None
+    compRH: Optional[float] = None
+    rawT:   Optional[float] = None
+    rawRH:  Optional[float] = None
+
+    rs0: Optional[int] = None
+    rs1: Optional[int] = None
+    rs2: Optional[int] = None
+    rs3: Optional[int] = None
+
+    co2: Optional[int] = None
+
+    model_config = ConfigDict(
+      from_attributes=True,
+      populate_by_name=True,
+      extra="ignore",
+    )
+
 class SensorMetadataIn(BaseModel):
     id: str = Field(..., description="Device ID, same as used in sensor_data")
     location: Optional[str] = None
