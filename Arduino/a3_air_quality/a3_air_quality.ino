@@ -141,16 +141,17 @@ void setup() {
   // Arduino-millis() Each client must have a unique client ID
   mqttClient.setId(deviceId);
   mqttClient.setKeepAliveInterval(30000);
+
+  snprintf(connectionTopic, sizeof(connectionTopic), "A3/AirQuality/Connection/%s", deviceId);
+  Serial.println(connectionTopic);
   // Set LWT message that activates if client loses MQTT connection
-  mqttClient.beginWill(topic, true, 1);
+  mqttClient.beginWill(connectionTopic, true, 1);
   mqttClient.print("offline");
   mqttClient.endWill();
 
   // Create topic strings for MQTT
   snprintf(topic, sizeof(topic), "A3/AirQuality/%s", deviceId);
   Serial.println(topic);
-  snprintf(connectionTopic, sizeof(connectionTopic), "A3/AirQuality/Connection/%s", deviceId);
-  Serial.println(connectionTopic);
   // You can provide a username and password for authentication
   mqttClient.setUsernamePassword(SECRET_USERNAME, SECRET_PASSWORD);
 
