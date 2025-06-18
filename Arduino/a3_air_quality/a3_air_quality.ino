@@ -66,7 +66,6 @@ char deviceId[UUID_BUFFER_SIZE];
 char topic[64] = "A3/AirQuality/";
 char connectionTopic[80] = "A3/AirQuality/Connection/";
 const uint8_t qos = 2;
-String message = "";
 
 // Please use "arduino_secrets.h" for your WiFi credentials
 const char *ssid = SECRET_SSID;
@@ -76,9 +75,9 @@ const char *ntpServer = "pool.ntp.org";           // NTP server for fetching tim
 const char *tz = "EET-2EEST,M3.5.0/3,M10.5.0/4";  // Timezone string for Europe/Helsinki
 int status = WL_IDLE_STATUS;                      // Default status for WiFi
 
-const long interval = 10000;       // Interval for reading sensors (ms)
+const long interval = 60000;       // Interval for reading sensors (ms)
 unsigned long previousMillis = 0;  // Time on last program cycle
-String timestamp;                  // Timestamp for sensor data
+char timestamp[32];                // Timestamp for sensor data
 
 void setup() {
   // Initialize serial
@@ -106,28 +105,30 @@ void setup() {
 }
 
 void loop() {
-  // Run the logic based on set interval (10 seconds atm)
+  // Run the logic based on an interval (set to 60 seconds)
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
 
-    timestamp = createTimestamp();
+    createTimestamp(timestamp, sizeof(timestamp));
     // Reconnect WiFi if connection drops
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("Connection lost! Attempting to reconnect..");
       connectToWifi();
     }
-    // Reconnect to MQTT is connection drops
+    // Reconnect to MQTT if connection drops
     if (!mqttClient.connected()) {
       Serial.println("Lost MQTT connection - reconnecting..");
       connectToMQTT();
     }
     // Read data, process to json and send to MQTT broker
     readSensors();
-    dataToJson();
-    sendMQTTMessage();
+    char message[512];
+    size_t messageLen = dataToJson(message, sizeof(message));
+    sendMQTTMessage(message, messageLen);
     printSerialDebug();
   }
+  mqttClient.poll();
 }
 
 void connectToWifi() {
@@ -221,20 +222,20 @@ void connectToMQTT() {
   mqttClient.endMessage();
 }
 
-String createTimestamp() {
+void createTimestamp(char* buffer, size_t bufferSize) {
   // C language structure containing calendar date and time
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return "0000-00-00 00:00:00";  // Default if no time available
-  }
 
-  char timestamp[25];
-  // Fancy C funtion to format time into ISO date string
+  if (!getLocalTime(&timeinfo)) {
+    // Default if no time available
+    strncpy(buffer, "0000-00-00 00:00:00", bufferSize);
+    buffer[bufferSize -1] = '\0'; // Make sure buffer is null terminated
+    return;
+  }
+  // Fancy C funtion to format time into ISO date
   snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d",
            timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
-  return String(timestamp);
 }
 void readSensors() {
 
@@ -291,7 +292,7 @@ void readSensors() {
   }
 }
 
-void dataToJson() {
+size_t dataToJson(char* outBuffer, size_t bufferSize) {
   StaticJsonDocument<512> doc;
 
   doc["timestamp"] = timestamp;
@@ -323,19 +324,20 @@ void dataToJson() {
   doc["temperature"] = currentData.temp;
   doc["humidity"] = currentData.hum;
 
-  serializeJson(doc, message);
   // json to Serial for debugging
   serializeJson(doc, Serial);
+
+  return serializeJson(doc, outBuffer, bufferSize);
 }
 
-void sendMQTTMessage() {
+void sendMQTTMessage(const char* message, size_t messageLen) {
   Serial.print("Sending message to topic: ");
   Serial.println(topic);
   Serial.println();
 
-  // send message, the Print interface can be used to set the message contents
-  mqttClient.beginMessage(topic, message.length(), false, qos, false);
-  mqttClient.print(message);
+  // send MQTT message with no retain and qos level 2
+  mqttClient.beginMessage(topic, messageLen, false, qos);
+  mqttClient.write((const uint8_t*)message, messageLen);
   mqttClient.endMessage();
 }
 
