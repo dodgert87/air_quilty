@@ -20,6 +20,7 @@ from app.models.DB_tables.webhook_logs import WebhookLog
 from app.models.DB_tables.rest_logs import RestLog
 from app.models.DB_tables.graphql_logs import GraphQLLog
 from app.models.DB_tables.sensor import Sensor
+from app.models.DB_tables.webhook import Webhook
 
 logger = logging.getLogger(__name__)
 

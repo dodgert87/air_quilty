@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 import re
@@ -9,12 +10,12 @@ from app.models.DB_tables.user_secrets import UserSecret
 from app.models.DB_tables.user import User
 from app.infrastructure.database.repository.restAPI import api_key_repository
 from app.utils.jwt_utils import decode_jwt, decode_jwt_unverified, generate_jwt
-from app.models.schemas.rest.auth_schemas import LoginResponse, NewUserInput, OnboardResult
+from app.models.schemas.rest.auth_schemas import LoginResponse, NewUserInput, OnboardResult, SecretCreateRequest, SecretCreateResponse, SecretInfo
 from app.utils.secret_utils import generate_api_key, generate_secret, get_api_key_expiry, get_secret_expiry
 from app.utils.hashing import hash_value, verify_value
 from app.utils.config import settings
 from app.infrastructure.database.repository.restAPI.user_repository import get_user_by_email, create_user, get_user_by_id, update_last_login
-from app.infrastructure.database.repository.restAPI.secret_repository import create_user_secret, get_all_active_user_secrets
+from app.infrastructure.database.repository.restAPI.secret_repository import create_user_secret, delete_user_secret_by_label, get_all_active_user_secrets, get_user_secret_labels, get_user_secrets_info, set_user_secret_active_status
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.exceptions_base import AppException, AuthValidationError, UserNotFoundError, AuthConflictError
 
@@ -263,3 +264,42 @@ async def get_all_users() -> List[User]:
 async def find_user_info(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
     async with run_in_transaction() as session:
         return await find_user(user_id, email, name)
+
+
+async def get_secret_info_for_user(user_id: UUID, is_active: Optional[bool] = None) -> list[SecretInfo]:
+    async with run_in_transaction() as session:
+        secrets = await get_user_secrets_info(session, user_id, is_active=is_active)
+        return [SecretInfo(**s) for s in secrets]
+
+async def create_secret_for_user(user_id: UUID, payload: SecretCreateRequest) -> SecretCreateResponse:
+    secret_plain = generate_secret()
+    secret_hashed = hash_value(secret_plain)
+
+    async with run_in_transaction() as session:
+        new_secret = await create_user_secret(
+            db=session,
+            user_id=user_id,
+            secret=secret_hashed,
+            label=payload.label,
+            is_active=payload.is_active if payload.is_active is not None else True,
+            expires_at=payload.expires_at or datetime.now(timezone.utc).replace(year=datetime.now().year + 1)
+        )
+
+    return SecretCreateResponse(
+        label=new_secret.label,
+        secret=secret_plain
+    )
+
+async def delete_secret_by_label(user_id: UUID, label: str) -> str:
+    async with run_in_transaction() as session:
+        deleted = await delete_user_secret_by_label(session, user_id, label)
+        if not deleted:
+            raise AuthValidationError(f"Secret with label '{label}' not found.")
+    return label
+
+async def set_secret_active_status(user_id: UUID, label: str, is_active: bool) -> str:
+    async with run_in_transaction() as session:
+        updated = await set_user_secret_active_status(session, user_id, label, is_active)
+        if not updated:
+            raise AuthValidationError(f"Secret with label '{label}' not found or already in desired state.")
+    return label

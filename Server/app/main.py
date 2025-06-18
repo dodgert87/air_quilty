@@ -14,6 +14,7 @@ from app.infrastructure.database.init_db import init_db
 from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
 from app.api.graphql.router import graphql_router
+from app.api.webhook.router import router as webhook_router
 
 from app.utils.logging_config import setup_logging
 from app.domain.mqtt_listener import listen_to_mqtt
@@ -42,9 +43,9 @@ app = FastAPI(title="Air Quality API", lifespan=lifespan, middleware=middleware)
 
 versioned_router = APIRouter(prefix=api_prefix)
 versioned_router.include_router(rest_router)
-
+versioned_router.include_router(webhook_router)
+versioned_router.include_router(graphql_router, prefix="/sensor/data/graphql")
 app.include_router(versioned_router)
-app.include_router(graphql_router, prefix=f"{api_prefix}/sensor/data/graphql")
 
 
 app.add_exception_handler(AppException, app_exception_handler) # type: ignore
