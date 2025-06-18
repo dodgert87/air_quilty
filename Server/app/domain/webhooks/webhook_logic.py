@@ -1,7 +1,13 @@
 from uuid import UUID
-from typing import List
+from typing import List, Optional
+import hmac
+import hashlib
+import json
+import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.DB_tables.user_secrets import UserSecret
 from app.infrastructure.database.transaction import run_in_transaction
-from app.infrastructure.database.repository.restAPI.secret_repository import get_user_secret_by_label
+from app.infrastructure.database.repository.restAPI.secret_repository import get_user_secret_by_id, get_user_secret_by_label, update_webhook_retry
 from app.infrastructure.database.repository.webhook.webhook_repository import (
     get_webhooks_by_user,
     get_webhook_by_id_and_user,
@@ -102,3 +108,52 @@ async def update_webhook(user_id: UUID, payload: WebhookUpdatePayload) -> Webhoo
             webhook.secret_id = secret.id
 
         return await update_webhook_in_db(session, webhook)
+
+
+async def send_webhook(session: AsyncSession, webhook: Webhook, payload: dict) -> None:
+    if not webhook.enabled:
+        return
+
+    if not webhook.secret_id:
+        raise ValueError("Webhook has no associated secret. Cannot sign payload.")
+
+    secret_obj: Optional[UserSecret] = await get_user_secret_by_id(session, webhook.secret_id)
+    if not secret_obj:
+        raise ValueError("Secret not found or revoked. Cannot sign webhook.")
+
+    # JSON payload signing
+    payload_json = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    signature = hmac.new(
+        secret_obj.secret.encode("utf-8"),
+        payload_json.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Hub-Signature-256": f"sha256={signature}"
+    }
+
+    if webhook.custom_headers:
+        headers.update(webhook.custom_headers)
+
+    # Retry mechanism
+    max_attempts = 3
+    last_error = None
+
+    for attempt in range(max_attempts):
+        try:
+            async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, verify=True) as client:
+                response = await client.post(webhook.target_url, content=payload_json, headers=headers)
+
+            if response.status_code in {200, 201, 202, 204}:
+                # Success: reset retry counter
+                await update_webhook_retry(session, webhook.id, retry_count=0)
+                return
+            else:
+                last_error = f"HTTP {response.status_code}: {response.text}"
+        except Exception as e:
+            last_error = str(e)
+
+    # Failure after retries: increment retry count
+    await update_webhook_retry(session, webhook.id, retry_count=webhook.retry_count + 1, last_error=last_error)

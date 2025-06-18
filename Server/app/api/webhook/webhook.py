@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Request, status
 from app.models.schemas.webhook.webhook_schema import WebhookCreate, WebhookDeletePayload, WebhookRead, WebhookUpdatePayload
-from app.domain.webhook_logic import (
+from app.domain.webhooks.webhook_logic import (
     get_user_webhooks,
     get_allowed_events_for_role,
     create_webhook,
