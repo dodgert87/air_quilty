@@ -1,0 +1,542 @@
+[
+  {
+    "timestamp": "2025-05-21T06:00:00Z",
+    "room": "a3-20",
+    "temperature": 22.5,
+    "co2": 729,
+    "humidity": 37,
+    "tvoc": 252,
+    "aqi": 119
+  },
+  {
+    "timestamp": "2025-05-21T06:00:00Z",
+    "room": "a3-21",
+    "temperature": 20.5,
+    "co2": 744,
+    "humidity": 36,
+    "tvoc": 169,
+    "aqi": 108
+  },
+  {
+    "timestamp": "2025-05-21T06:00:00Z",
+    "room": "a3-23",
+    "temperature": 22.9,
+    "co2": 401,
+    "humidity": 40,
+    "tvoc": 170,
+    "aqi": 98
+  },
+  {
+    "timestamp": "2025-05-21T06:00:00Z",
+    "room": "a3-24",
+    "temperature": 22.9,
+    "co2": 682,
+    "humidity": 30,
+    "tvoc": 157,
+    "aqi": 112
+  },
+  {
+    "timestamp": "2025-05-21T06:00:00Z",
+    "room": "a3-27",
+    "temperature": 27.0,
+    "co2": 787,
+    "humidity": 31,
+    "tvoc": 159,
+    "aqi": 45
+  },
+  {
+    "timestamp": "2025-05-21T07:00:00Z",
+    "room": "a3-20",
+    "temperature": 22.0,
+    "co2": 980,
+    "humidity": 31,
+    "tvoc": 64,
+    "aqi": 172
+  },
+  {
+    "timestamp": "2025-05-21T07:00:00Z",
+    "room": "a3-21",
+    "temperature": 22.2,
+    "co2": 644,
+    "humidity": 50,
+    "tvoc": 252,
+    "aqi": 87
+  },
+  {
+    "timestamp": "2025-05-21T07:00:00Z",
+    "room": "a3-23",
+    "temperature": 26.0,
+    "co2": 807,
+    "humidity": 41,
+    "tvoc": 234,
+    "aqi": 164
+  },
+  {
+    "timestamp": "2025-05-21T07:00:00Z",
+    "room": "a3-24",
+    "temperature": 25.6,
+    "co2": 446,
+    "humidity": 39,
+    "tvoc": 289,
+    "aqi": 170
+  },
+  {
+    "timestamp": "2025-05-21T07:00:00Z",
+    "room": "a3-27",
+    "temperature": 20.3,
+    "co2": 711,
+    "humidity": 51,
+    "tvoc": 75,
+    "aqi": 93
+  },
+  {
+    "timestamp": "2025-05-21T08:00:00Z",
+    "room": "a3-20",
+    "temperature": 22.7,
+    "co2": 581,
+    "humidity": 44,
+    "tvoc": 89,
+    "aqi": 57
+  },
+  {
+    "timestamp": "2025-05-21T08:00:00Z",
+    "room": "a3-21",
+    "temperature": 24.4,
+    "co2": 892,
+    "humidity": 55,
+    "tvoc": 190,
+    "aqi": 89
+  },
+  {
+    "timestamp": "2025-05-21T08:00:00Z",
+    "room": "a3-23",
+    "temperature": 20.3,
+    "co2": 465,
+    "humidity": 33,
+    "tvoc": 110,
+    "aqi": 94
+  },
+  {
+    "timestamp": "2025-05-21T08:00:00Z",
+    "room": "a3-24",
+    "temperature": 25.3,
+    "co2": 770,
+    "humidity": 48,
+    "tvoc": 57,
+    "aqi": 34
+  },
+  {
+    "timestamp": "2025-05-21T08:00:00Z",
+    "room": "a3-27",
+    "temperature": 25.8,
+    "co2": 711,
+    "humidity": 57,
+    "tvoc": 229,
+    "aqi": 145
+  },
+  {
+    "timestamp": "2025-05-21T09:00:00Z",
+    "room": "a3-20",
+    "temperature": 26.9,
+    "co2": 964,
+    "humidity": 33,
+    "tvoc": 141,
+    "aqi": 130
+  },
+  {
+    "timestamp": "2025-05-21T09:00:00Z",
+    "room": "a3-21",
+    "temperature": 24.5,
+    "co2": 857,
+    "humidity": 38,
+    "tvoc": 163,
+    "aqi": 89
+  },
+  {
+    "timestamp": "2025-05-21T09:00:00Z",
+    "room": "a3-23",
+    "temperature": 21.3,
+    "co2": 671,
+    "humidity": 45,
+    "tvoc": 175,
+    "aqi": 100
+  },
+  {
+    "timestamp": "2025-05-21T09:00:00Z",
+    "room": "a3-24",
+    "temperature": 21.0,
+    "co2": 762,
+    "humidity": 40,
+    "tvoc": 200,
+    "aqi": 154
+  },
+  {
+    "timestamp": "2025-05-21T09:00:00Z",
+    "room": "a3-27",
+    "temperature": 22.0,
+    "co2": 462,
+    "humidity": 54,
+    "tvoc": 163,
+    "aqi": 175
+  },
+  {
+    "timestamp": "2025-05-21T10:00:00Z",
+    "room": "a3-20",
+    "temperature": 21.3,
+    "co2": 639,
+    "humidity": 32,
+    "tvoc": 116,
+    "aqi": 12
+  },
+  {
+    "timestamp": "2025-05-21T10:00:00Z",
+    "room": "a3-21",
+    "temperature": 21.4,
+    "co2": 782,
+    "humidity": 48,
+    "tvoc": 161,
+    "aqi": 65
+  },
+  {
+    "timestamp": "2025-05-21T10:00:00Z",
+    "room": "a3-23",
+    "temperature": 26.4,
+    "co2": 640,
+    "humidity": 39,
+    "tvoc": 132,
+    "aqi": 59
+  },
+  {
+    "timestamp": "2025-05-21T10:00:00Z",
+    "room": "a3-24",
+    "temperature": 22.0,
+    "co2": 730,
+    "humidity": 48,
+    "tvoc": 149,
+    "aqi": 114
+  },
+  {
+    "timestamp": "2025-05-21T10:00:00Z",
+    "room": "a3-27",
+    "temperature": 20.5,
+    "co2": 868,
+    "humidity": 48,
+    "tvoc": 156,
+    "aqi": 116
+  },
+  {
+    "timestamp": "2025-05-21T11:00:00Z",
+    "room": "a3-20",
+    "temperature": 23.5,
+    "co2": 522,
+    "humidity": 31,
+    "tvoc": 227,
+    "aqi": 70
+  },
+  {
+    "timestamp": "2025-05-21T11:00:00Z",
+    "room": "a3-21",
+    "temperature": 24.9,
+    "co2": 583,
+    "humidity": 43,
+    "tvoc": 68,
+    "aqi": 111
+  },
+  {
+    "timestamp": "2025-05-21T11:00:00Z",
+    "room": "a3-23",
+    "temperature": 22.7,
+    "co2": 624,
+    "humidity": 56,
+    "tvoc": 233,
+    "aqi": 136
+  },
+  {
+    "timestamp": "2025-05-21T11:00:00Z",
+    "room": "a3-24",
+    "temperature": 25.2,
+    "co2": 577,
+    "humidity": 45,
+    "tvoc": 127,
+    "aqi": 172
+  },
+  {
+    "timestamp": "2025-05-21T11:00:00Z",
+    "room": "a3-27",
+    "temperature": 24.4,
+    "co2": 880,
+    "humidity": 52,
+    "tvoc": 246,
+    "aqi": 177
+  },
+  {
+    "timestamp": "2025-05-21T12:00:00Z",
+    "room": "a3-20",
+    "temperature": 20.1,
+    "co2": 713,
+    "humidity": 37,
+    "tvoc": 200,
+    "aqi": 37
+  },
+  {
+    "timestamp": "2025-05-21T12:00:00Z",
+    "room": "a3-21",
+    "temperature": 22.9,
+    "co2": 742,
+    "humidity": 31,
+    "tvoc": 164,
+    "aqi": 47
+  },
+  {
+    "timestamp": "2025-05-21T12:00:00Z",
+    "room": "a3-23",
+    "temperature": 22.1,
+    "co2": 905,
+    "humidity": 43,
+    "tvoc": 238,
+    "aqi": 159
+  },
+  {
+    "timestamp": "2025-05-21T12:00:00Z",
+    "room": "a3-24",
+    "temperature": 22.0,
+    "co2": 832,
+    "humidity": 42,
+    "tvoc": 253,
+    "aqi": 166
+  },
+  {
+    "timestamp": "2025-05-21T12:00:00Z",
+    "room": "a3-27",
+    "temperature": 22.9,
+    "co2": 734,
+    "humidity": 30,
+    "tvoc": 102,
+    "aqi": 92
+  },
+  {
+    "timestamp": "2025-05-21T13:00:00Z",
+    "room": "a3-20",
+    "temperature": 23.1,
+    "co2": 831,
+    "humidity": 39,
+    "tvoc": 101,
+    "aqi": 70
+  },
+  {
+    "timestamp": "2025-05-21T13:00:00Z",
+    "room": "a3-21",
+    "temperature": 26.5,
+    "co2": 660,
+    "humidity": 57,
+    "tvoc": 87,
+    "aqi": 169
+  },
+  {
+    "timestamp": "2025-05-21T13:00:00Z",
+    "room": "a3-23",
+    "temperature": 20.6,
+    "co2": 975,
+    "humidity": 39,
+    "tvoc": 101,
+    "aqi": 144
+  },
+  {
+    "timestamp": "2025-05-21T13:00:00Z",
+    "room": "a3-24",
+    "temperature": 23.2,
+    "co2": 508,
+    "humidity": 59,
+    "tvoc": 227,
+    "aqi": 23
+  },
+  {
+    "timestamp": "2025-05-21T13:00:00Z",
+    "room": "a3-27",
+    "temperature": 22.5,
+    "co2": 663,
+    "humidity": 52,
+    "tvoc": 292,
+    "aqi": 114
+  },
+  {
+    "timestamp": "2025-05-21T14:00:00Z",
+    "room": "a3-20",
+    "temperature": 20.8,
+    "co2": 653,
+    "humidity": 32,
+    "tvoc": 162,
+    "aqi": 82
+  },
+  {
+    "timestamp": "2025-05-21T14:00:00Z",
+    "room": "a3-21",
+    "temperature": 21.2,
+    "co2": 663,
+    "humidity": 32,
+    "tvoc": 217,
+    "aqi": 47
+  },
+  {
+    "timestamp": "2025-05-21T14:00:00Z",
+    "room": "a3-23",
+    "temperature": 21.1,
+    "co2": 902,
+    "humidity": 36,
+    "tvoc": 290,
+    "aqi": 173
+  },
+  {
+    "timestamp": "2025-05-21T14:00:00Z",
+    "room": "a3-24",
+    "temperature": 20.1,
+    "co2": 804,
+    "humidity": 31,
+    "tvoc": 208,
+    "aqi": 48
+  },
+  {
+    "timestamp": "2025-05-21T14:00:00Z",
+    "room": "a3-27",
+    "temperature": 24.8,
+    "co2": 469,
+    "humidity": 49,
+    "tvoc": 159,
+    "aqi": 152
+  },
+  {
+    "timestamp": "2025-05-21T15:00:00Z",
+    "room": "a3-20",
+    "temperature": 26.0,
+    "co2": 727,
+    "humidity": 41,
+    "tvoc": 60,
+    "aqi": 150
+  },
+  {
+    "timestamp": "2025-05-21T15:00:00Z",
+    "room": "a3-21",
+    "temperature": 24.8,
+    "co2": 523,
+    "humidity": 44,
+    "tvoc": 123,
+    "aqi": 101
+  },
+  {
+    "timestamp": "2025-05-21T15:00:00Z",
+    "room": "a3-23",
+    "temperature": 25.1,
+    "co2": 799,
+    "humidity": 48,
+    "tvoc": 145,
+    "aqi": 104
+  },
+  {
+    "timestamp": "2025-05-21T15:00:00Z",
+    "room": "a3-24",
+    "temperature": 26.7,
+    "co2": 479,
+    "humidity": 59,
+    "tvoc": 157,
+    "aqi": 179
+  },
+  {
+    "timestamp": "2025-05-21T15:00:00Z",
+    "room": "a3-27",
+    "temperature": 21.8,
+    "co2": 442,
+    "humidity": 55,
+    "tvoc": 147,
+    "aqi": 166
+  },
+  {
+    "timestamp": "2025-05-21T16:00:00Z",
+    "room": "a3-20",
+    "temperature": 25.9,
+    "co2": 555,
+    "humidity": 57,
+    "tvoc": 62,
+    "aqi": 50
+  },
+  {
+    "timestamp": "2025-05-21T16:00:00Z",
+    "room": "a3-21",
+    "temperature": 26.7,
+    "co2": 746,
+    "humidity": 32,
+    "tvoc": 202,
+    "aqi": 45
+  },
+  {
+    "timestamp": "2025-05-21T16:00:00Z",
+    "room": "a3-23",
+    "temperature": 26.1,
+    "co2": 934,
+    "humidity": 58,
+    "tvoc": 252,
+    "aqi": 17
+  },
+  {
+    "timestamp": "2025-05-21T16:00:00Z",
+    "room": "a3-24",
+    "temperature": 26.5,
+    "co2": 721,
+    "humidity": 54,
+    "tvoc": 119,
+    "aqi": 96
+  },
+  {
+    "timestamp": "2025-05-21T16:00:00Z",
+    "room": "a3-27",
+    "temperature": 23.6,
+    "co2": 951,
+    "humidity": 31,
+    "tvoc": 213,
+    "aqi": 59
+  },
+  {
+    "timestamp": "2025-05-21T17:00:00Z",
+    "room": "a3-20",
+    "temperature": 24.7,
+    "co2": 553,
+    "humidity": 41,
+    "tvoc": 167,
+    "aqi": 36
+  },
+  {
+    "timestamp": "2025-05-21T17:00:00Z",
+    "room": "a3-21",
+    "temperature": 20.9,
+    "co2": 671,
+    "humidity": 37,
+    "tvoc": 213,
+    "aqi": 164
+  },
+  {
+    "timestamp": "2025-05-21T17:00:00Z",
+    "room": "a3-23",
+    "temperature": 24.3,
+    "co2": 669,
+    "humidity": 55,
+    "tvoc": 283,
+    "aqi": 164
+  },
+  {
+    "timestamp": "2025-05-21T17:00:00Z",
+    "room": "a3-24",
+    "temperature": 23.8,
+    "co2": 860,
+    "humidity": 51,
+    "tvoc": 160,
+    "aqi": 65
+  },
+  {
+    "timestamp": "2025-05-21T17:00:00Z",
+    "room": "a3-27",
+    "temperature": 23.7,
+    "co2": 485,
+    "humidity": 40,
+    "tvoc": 251,
+    "aqi": 48
+  }
+]
