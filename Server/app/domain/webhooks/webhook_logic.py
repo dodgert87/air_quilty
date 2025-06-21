@@ -18,11 +18,12 @@ from app.infrastructure.database.repository.webhook.webhook_repository import (
     update_webhook as update_webhook_in_db,
     delete_webhook as delete_webhook_in_db,
 )
-from app.constants.webhooks import ROLE_TO_WEBHOOK_EVENTS
-from app.models.schemas.webhook.webhook_schema import WebhookCreate, WebhookUpdatePayload
+from app.constants.webhooks import ROLE_TO_WEBHOOK_EVENTS, WebhookEvent
+from app.models.schemas.webhook.webhook_schema import WebhookConfig, WebhookCreate, WebhookUpdatePayload
 from app.models.DB_tables.webhook import Webhook
 from app.utils.exceptions_base import AppException
 from app.utils.config import settings
+from app.domain.webhooks.dispatcher import dispatcher
 
 
 
@@ -63,14 +64,39 @@ async def create_webhook(user_id: UUID, user_role: str, data: WebhookCreate) -> 
             target_url=str(data.target_url),
             secret_id=secret_id,
             custom_headers=data.custom_headers or {},
+            parameters=data.parameters,
         )
 
-        return await create_webhook_in_db(session, webhook)
+        created = await create_webhook_in_db(session, webhook)
+
+        if secret_id:
+            if data.secret_label is not None:
+
+                secret_obj = await get_user_secret_by_label(session, user_id, data.secret_label)
+
+                if not secret_obj:
+                    raise AppException(
+                        message="Secret not found",
+                        status_code=404,
+                        public_message="Webhook secret not found.",
+                        domain="webhook"
+                    )
+
+                config = WebhookConfig.from_orm_and_secret(created, decrypt_secret(secret_obj.secret))
+                dispatcher.add_to_registry(config)
+
+        return created
 
 
 async def delete_webhook(user_id: UUID, webhook_id: UUID) -> bool:
     async with run_in_transaction() as session:
+        webhook = await get_webhook_by_id_and_user(session, webhook_id, user_id)
+        event_type = webhook.event_type if webhook else None
+
         deleted = await delete_webhook_in_db(session, webhook_id, user_id)
+
+        if deleted and event_type:
+            dispatcher.remove_from_registry(webhook_id, WebhookEvent(event_type))
         if not deleted:
             raise AppException(
                 message=f"Webhook {webhook_id} not found for user {user_id}",
@@ -100,6 +126,8 @@ async def update_webhook(user_id: UUID, payload: WebhookUpdatePayload) -> Webhoo
             webhook.enabled = payload.enabled
         if payload.custom_headers is not None:
             webhook.custom_headers = payload.custom_headers
+        if payload.parameters is not None:
+            webhook.parameters = payload.parameters
 
         if payload.secret_label:
             secret = await get_user_secret_by_label(session, user_id, payload.secret_label)
@@ -112,78 +140,21 @@ async def update_webhook(user_id: UUID, payload: WebhookUpdatePayload) -> Webhoo
                 )
             webhook.secret_id = secret.id
 
-        return await update_webhook_in_db(session, webhook)
+        updated = await update_webhook_in_db(session, webhook)
+
+        if webhook.secret_id:
+            secret_obj = await get_user_secret_by_id(session, webhook.secret_id)
+            if not secret_obj:
+                    raise AppException(
+                        message="Secret not found",
+                        status_code=404,
+                        public_message="Webhook secret not found.",
+                        domain="webhook"
+                    )
+
+            config = WebhookConfig.from_orm_and_secret(updated, decrypt_secret(secret_obj.secret))
+            dispatcher.replace_in_registry(config)
+
+        return updated
 
 
-async def send_webhook(session: AsyncSession, webhook: Webhook, payload: dict) -> None:
-    print(f"Sending webhook {webhook.id} to {webhook.target_url} with payload: {payload}")
-    if not webhook.enabled:
-        return
-
-    if not webhook.secret_id:
-        raise ValueError("Webhook has no associated secret. Cannot sign payload.")
-
-    secret_obj: Optional[UserSecret] = await get_user_secret_by_id(session, webhook.secret_id)
-    if not secret_obj:
-        raise ValueError("Secret not found or revoked. Cannot sign webhook.")
-
-    # JSON payload signing
-    if isinstance(payload, BaseModel):
-        payload_json = payload.model_dump_json()
-    else:
-
-        payload_json = json.dumps(payload, default=fallback_serializer, separators=(",", ":"), sort_keys=True)
-
-    raw_secret = decrypt_secret(secret_obj.secret)
-    signature = hmac.new(
-        raw_secret.encode("utf-8"),
-        payload_json.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Hub-Signature-256": f"sha256={signature}"
-    }
-
-    if webhook.custom_headers:
-        headers.update(webhook.custom_headers)
-
-    # Retry mechanism
-    max_attempts = settings.MAX_ATTEMPTS_PER_WEBHOOK
-    last_error = None
-
-
-    for attempt in range(max_attempts):
-        try:
-            async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, verify=True) as client:
-                response = await client.post(webhook.target_url, content=payload_json, headers=headers)
-
-            status = response.status_code
-
-            if 200 <= status < 300:
-                print(f"Webhook {webhook.id} sent successfully on attempt {attempt + 1}")
-                await update_webhook_retry(session, webhook.id, retry_count=0)
-                return
-
-            elif 500 <= status < 600:
-                last_error = f"HTTP {status}: {response.text}"
-
-            else:
-                print(f"Webhook {webhook.id} failed permanently with status {status}: {response.text}")
-                await update_webhook_retry(session, webhook.id, retry_count=0, last_error=f"Client error: {response.text}")
-                return
-
-        except Exception as e:
-            last_error = str(e)
-
-    await update_webhook_retry(session, webhook.id, retry_count=webhook.retry_count + 1, last_error=last_error)
-
-# fallback for dicts (e.g., if dispatcher accepted a raw dict)
-
-def fallback_serializer(obj):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    elif isinstance(obj, UUID):
-        return str(obj)
-    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")

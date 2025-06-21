@@ -213,7 +213,6 @@ async def set_user_secret_active_status(
 async def update_webhook_retry(
     session: AsyncSession,
     webhook_id: UUID,
-    retry_count: int,
     last_error: str | None = None
 ):
     try:
@@ -221,7 +220,6 @@ async def update_webhook_retry(
             update(Webhook)
             .where(Webhook.id == webhook_id)
             .values(
-                retry_count=retry_count,
                 last_error=last_error,
                 last_triggered_at=datetime.now(timezone.utc)
             )

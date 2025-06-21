@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy import String, Boolean, DateTime, Integer, JSON, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,10 +17,11 @@ class Webhook(Base):
     secret_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("user_secrets.id"), nullable=True)
     custom_headers: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    retry_count: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[str | None] = mapped_column(String, nullable=True)
     last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

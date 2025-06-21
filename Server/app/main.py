@@ -4,9 +4,8 @@ from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware import Middleware
 from sqlalchemy import text
-from app.domain.webhooks.handlers.sensor_data_received_handler import SensorDataReceivedHandler
+from app.infrastructure.database.transaction import run_in_transaction
 from app.constants.webhooks import WebhookEvent
-from app.domain.webhooks.handlers.sensor_created_handler import SensorCreatedHandler
 from app.middleware.RestLoggerMiddleware import RestLoggerMiddleware
 from app.exception_handlers import app_exception_handler, fallback_exception_handler, validation_error_handler
 from app.utils.exceptions_base import AppException
@@ -18,9 +17,11 @@ from app.infrastructure.database.session import engine
 from app.api.rest.router import router as rest_router
 from app.api.graphql.router import graphql_router
 from app.api.webhook.router import router as webhook_router
+from app.domain.webhooks.dispatcher import dispatcher
 
 from app.utils.logging_config import setup_logging
 from app.domain.mqtt_listener import listen_to_mqtt
+
 
 
 
@@ -29,10 +30,18 @@ setup_logging() # Initialize logging configuration
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    from app.domain.webhooks.dispatcher import dispatcher
+
+    # ─── Load webhook registries ──────────────────────────────
+    await dispatcher.load_all_registries()
+
+
+    # ─── Start MQTT Listener ──────────────────────────────────
     task = asyncio.create_task(listen_to_mqtt())
+
     yield
-    task.cancel()  # Cleanup if needed
+
+    # ─── Shutdown Cleanup ─────────────────────────────────────
+    task.cancel()
 
 
 

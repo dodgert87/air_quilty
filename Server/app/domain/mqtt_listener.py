@@ -78,7 +78,7 @@ async def listen_to_mqtt() -> None:
                             sensor = await modify_sensor(sensor_id, update_data)
                             if sensor:
                                 sensor_out = SensorOut.model_validate(sensor)
-                                await dispatcher.dispatch(WebhookEvent.SENSOR_STATUS_CHANGED, sensor_out)
+                                #await dispatcher.dispatch(WebhookEvent.SENSOR_STATUS_CHANGED, sensor_out)
                                 logger.info(f"Updated sensor {sensor_id} status to {'active' if is_active else 'inactive'} via MQTT")
                             continue
 
@@ -90,7 +90,8 @@ async def listen_to_mqtt() -> None:
                         await ensure_sensor_exists(data.device_id)
 
                         stored: SensorDataOut = await create_sensor_data_entry(data)
-                        await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
+                        #await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
+                        await dispatcher.dispatch(WebhookEvent.ALERT_TRIGGERED, stored)
 
                         mqtt_state.is_running = True
                         mqtt_state.last_message_at = datetime.now(timezone.utc)
