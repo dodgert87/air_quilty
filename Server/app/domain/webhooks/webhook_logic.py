@@ -4,7 +4,10 @@ import hmac
 import hashlib
 import json
 import httpx
+from pydantic import BaseModel
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.utils.crypto_utils import decrypt_secret
 from app.models.DB_tables.user_secrets import UserSecret
 from app.infrastructure.database.transaction import run_in_transaction
 from app.infrastructure.database.repository.restAPI.secret_repository import get_user_secret_by_id, get_user_secret_by_label, update_webhook_retry
@@ -19,6 +22,8 @@ from app.constants.webhooks import ROLE_TO_WEBHOOK_EVENTS
 from app.models.schemas.webhook.webhook_schema import WebhookCreate, WebhookUpdatePayload
 from app.models.DB_tables.webhook import Webhook
 from app.utils.exceptions_base import AppException
+from app.utils.config import settings
+
 
 
 async def get_user_webhooks(user_id: UUID) -> List[Webhook]:
@@ -111,6 +116,7 @@ async def update_webhook(user_id: UUID, payload: WebhookUpdatePayload) -> Webhoo
 
 
 async def send_webhook(session: AsyncSession, webhook: Webhook, payload: dict) -> None:
+    print(f"Sending webhook {webhook.id} to {webhook.target_url} with payload: {payload}")
     if not webhook.enabled:
         return
 
@@ -122,9 +128,15 @@ async def send_webhook(session: AsyncSession, webhook: Webhook, payload: dict) -
         raise ValueError("Secret not found or revoked. Cannot sign webhook.")
 
     # JSON payload signing
-    payload_json = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    if isinstance(payload, BaseModel):
+        payload_json = payload.model_dump_json()
+    else:
+
+        payload_json = json.dumps(payload, default=fallback_serializer, separators=(",", ":"), sort_keys=True)
+
+    raw_secret = decrypt_secret(secret_obj.secret)
     signature = hmac.new(
-        secret_obj.secret.encode("utf-8"),
+        raw_secret.encode("utf-8"),
         payload_json.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
@@ -138,22 +150,40 @@ async def send_webhook(session: AsyncSession, webhook: Webhook, payload: dict) -
         headers.update(webhook.custom_headers)
 
     # Retry mechanism
-    max_attempts = 3
+    max_attempts = settings.MAX_ATTEMPTS_PER_WEBHOOK
     last_error = None
+
 
     for attempt in range(max_attempts):
         try:
             async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, verify=True) as client:
                 response = await client.post(webhook.target_url, content=payload_json, headers=headers)
 
-            if response.status_code in {200, 201, 202, 204}:
-                # Success: reset retry counter
+            status = response.status_code
+
+            if 200 <= status < 300:
+                print(f"Webhook {webhook.id} sent successfully on attempt {attempt + 1}")
                 await update_webhook_retry(session, webhook.id, retry_count=0)
                 return
+
+            elif 500 <= status < 600:
+                last_error = f"HTTP {status}: {response.text}"
+
             else:
-                last_error = f"HTTP {response.status_code}: {response.text}"
+                print(f"Webhook {webhook.id} failed permanently with status {status}: {response.text}")
+                await update_webhook_retry(session, webhook.id, retry_count=0, last_error=f"Client error: {response.text}")
+                return
+
         except Exception as e:
             last_error = str(e)
 
-    # Failure after retries: increment retry count
     await update_webhook_retry(session, webhook.id, retry_count=webhook.retry_count + 1, last_error=last_error)
+
+# fallback for dicts (e.g., if dispatcher accepted a raw dict)
+
+def fallback_serializer(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, UUID):
+        return str(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")

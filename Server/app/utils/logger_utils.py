@@ -95,6 +95,7 @@ async def log_background_task_error(
     user_id: uuid.UUID | None = None
 ) -> None:
     try:
+        """
         async with run_in_transaction() as session:
             await insert_rest_log(
                 session=session,
@@ -109,5 +110,6 @@ async def log_background_task_error(
                 user_agent="internal-background-task",
                 error_message=error_message,
             )
+        """
     except Exception as e:
         logger.exception("Failed to log background task error to DB")

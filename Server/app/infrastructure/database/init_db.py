@@ -1,3 +1,4 @@
+from app.utils.crypto_utils import encrypt_secret
 from app.utils.logging_config import setup_logging
 setup_logging()
 
@@ -59,7 +60,7 @@ async def init_db():
             await secret_repository.create_user_secret(
                 session,
                 user_id=admin_user.id,
-                secret=hash_value(generate_secret()),
+                secret=encrypt_secret(generate_secret()),
                 label="admin-init",
                 is_active=True,
                 expires_at=get_secret_expiry()

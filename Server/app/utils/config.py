@@ -16,21 +16,23 @@ class Settings(BaseSettings):
     API_VERSION: str
 
     # ─── Default Password ────────────────────────────────
-    DEFAULT_USER_PASSWORD: str = "ChangeMe123!"
+    DEFAULT_USER_PASSWORD: SecretStr
+
 
     # ─── JWT Settings ────────────────────────────────────
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION_MINUTES: int = 60
+    JWT_EXPIRATION_MINUTES: int
 
     # ─── User Secret Settings ────────────────────────────
-    USER_SECRET_LENGTH: int = 32
-    USER_SECRET_EXPIRATION_DAYS: int = 180
-    MAX_SECRETS_PER_USER: int = 3  # active only
+    USER_SECRET_LENGTH: int
+    USER_SECRET_EXPIRATION_DAYS: int
+    MAX_SECRETS_PER_USER: int  # active only
+    MASTER_ENCRYPTION_KEY: SecretStr
 
     # ─── API Key Settings ────────────────────────────────
-    API_KEY_LENGTH: int = 32
-    API_KEY_EXPIRATION_DAYS: int = 90
-    MAX_API_KEYS_PER_USER: int = 5  # active only
+    API_KEY_LENGTH: int
+    API_KEY_EXPIRATION_DAYS: int
+    MAX_API_KEYS_PER_USER: int   # active only
 
     # ─── Admin Bootstrap ─────────────────────────────
     ADMIN_EMAIL: str
@@ -50,6 +52,10 @@ class Settings(BaseSettings):
     # ─── MQTT Auth Settings ─────────────────────────────────
     MQTT_USERNAME: str | None = None
     MQTT_PASSWORD: str | None = None
+
+    # ─── Webhook const ─────────────────────────────────
+    MAX_ATTEMPTS_PER_WEBHOOK: int
+
 
     # Go three levels up: utils → app → Server → .env
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]

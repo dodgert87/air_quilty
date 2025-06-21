@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 import re
 
+from app.utils.crypto_utils import decrypt_secret, encrypt_secret
 from app.infrastructure.database.repository.restAPI import secret_repository
 from app.infrastructure.database.repository.restAPI import user_repository
 from app.utils.validators import validate_password_complexity
@@ -35,7 +36,7 @@ async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
                 skipped_users.append(email)
                 continue
 
-            hashed_pw = hash_value(settings.DEFAULT_USER_PASSWORD)
+            hashed_pw = hash_value(settings.DEFAULT_USER_PASSWORD.get_secret_value())
 
             new_user = await create_user(
                 db,
@@ -48,7 +49,7 @@ async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
             await create_user_secret(
                 db,
                 user_id=new_user.id,
-                secret=hash_value(generate_secret()),
+                secret=encrypt_secret(generate_secret()),
                 label="temp",
                 is_active=True,
                 expires_at=get_secret_expiry()
@@ -80,7 +81,7 @@ async def change_user_password(user: User, old_password: str, new_password: str,
         await secret_repository.create_user_secret(
             session,
             user_id=user.id,
-            secret=hash_value(generate_secret()),
+            secret=encrypt_secret(generate_secret()),
             label=label or "reset",
             is_active=True,
             expires_at=get_secret_expiry()
@@ -100,7 +101,7 @@ async def login_user(email: str, password: str) -> LoginResponse:
         token, expires_in = generate_jwt(
             user_id=str(user.id),
             role=user.role,
-            secret=active_secret.secret
+            secret=decrypt_secret(active_secret.secret)
         )
 
         return LoginResponse(
@@ -122,7 +123,7 @@ async def validate_token_and_get_user(token: str) -> User:
 
         for s in secrets:
             try:
-                decode_jwt(token, s.secret)
+                decode_jwt(token, decrypt_secret(s.secret))
                 break
             except Exception:
                 continue
@@ -273,13 +274,13 @@ async def get_secret_info_for_user(user_id: UUID, is_active: Optional[bool] = No
 
 async def create_secret_for_user(user_id: UUID, payload: SecretCreateRequest) -> SecretCreateResponse:
     secret_plain = generate_secret()
-    secret_hashed = hash_value(secret_plain)
+    secret_encrypt = encrypt_secret(secret_plain)
 
     async with run_in_transaction() as session:
         new_secret = await create_user_secret(
             db=session,
             user_id=user_id,
-            secret=secret_hashed,
+            secret=secret_encrypt,
             label=payload.label,
             is_active=payload.is_active if payload.is_active is not None else True,
             expires_at=payload.expires_at or datetime.now(timezone.utc).replace(year=datetime.now().year + 1)

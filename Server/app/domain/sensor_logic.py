@@ -1,5 +1,7 @@
 from typing import List
 from uuid import UUID
+from app.models.schemas.webhook.sensor_created import SensorCreatedPayload
+from app.constants.webhooks import WebhookEvent
 from app.domain.pagination import paginate_query
 from app.infrastructure.database.repository.graphQL.sensor_metadata_graphql_repository import sensor_metadata_graphql_repository
 from app.models.schemas.graphQL.sensor_meta_data_query import SensorMetadataQuery
@@ -8,9 +10,23 @@ from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, Sens
 from app.infrastructure.database.repository.restAPI import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
 from app.utils.config import settings
+from app.utils.dispatcher import dispatcher
+
 
 async def create_sensor(sensor_data: SensorCreate):
-    return await sensor_repository.insert_sensor(sensor_data)
+    sensor = await sensor_repository.insert_sensor(sensor_data)
+
+    payload = SensorCreatedPayload(
+        sensor_id=sensor.sensor_id,
+        name=sensor.name,
+        location=sensor.location,
+        created_at=sensor.created_at,
+        model=sensor.model
+    )
+    print(f"Dispatching sensor created event for sensor {sensor.sensor_id}")
+    await dispatcher.dispatch(WebhookEvent.SENSOR_CREATED, payload)
+    return sensor
+
 
 
 async def get_sensor_by_id(sensor_id: UUID):
