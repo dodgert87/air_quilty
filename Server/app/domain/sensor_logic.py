@@ -10,8 +10,7 @@ from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, Sens
 from app.infrastructure.database.repository.restAPI import sensor_repository
 from app.utils.exceptions_base import SensorNotFoundError
 from app.utils.config import settings
-from app.utils.dispatcher import dispatcher
-
+from app.domain.webhooks.dispatcher import dispatcher
 
 async def create_sensor(sensor_data: SensorCreate):
     sensor = await sensor_repository.insert_sensor(sensor_data)

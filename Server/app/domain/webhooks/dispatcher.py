@@ -1,10 +1,14 @@
 from typing import Dict, Type
-from app.utils.exceptions_base import AppException
+from pydantic import BaseModel, ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domain.webhooks.handlers.sensor_created_handler import SensorCreatedHandler
+from app.domain.webhooks.handlers.sensor_data_received_handler import SensorDataReceivedHandler
 from app.constants.webhooks import WebhookEvent
 from app.domain.webhooks.handlers.base import WebhookEventHandler
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.utils.exceptions_base import AppException
 from app.infrastructure.database.transaction import run_in_transaction
-from pydantic import BaseModel, ValidationError
 
 
 class WebhookDispatcher:
@@ -20,34 +24,27 @@ class WebhookDispatcher:
     async def dispatch(self, event: WebhookEvent, payload: BaseModel | dict) -> None:
         handler = self._handlers.get(event)
         if not handler:
-            # Silently skip if no handler
-            return
+            return  # No handler, skip silently
 
-        # Validate payload type
         try:
             if isinstance(payload, dict):
                 raw_model = getattr(handler, "payload_model", None)
                 if not isinstance(raw_model, type) or not issubclass(raw_model, BaseModel):
-                    return  # skip if model is invalid
-
+                    return
                 payload_model: Type[BaseModel] = raw_model
                 payload = payload_model.model_validate(payload)
 
             elif not isinstance(payload, BaseModel):
-                return  # unknown payload type, skip
+                return
 
-        except ValidationError as ve:
-            # Payload invalid — skip dispatch, don't raise
-            # Optional: log this as a warning
-            return
+        except ValidationError:
+            return  # Invalid payload, skip
 
         try:
             async with run_in_transaction() as session:
                 await handler.handle(payload, session=session)
-
         except AppException:
             raise
-
         except Exception as e:
             raise AppException(
                 message=f"Unhandled error in webhook dispatcher for event '{event}': {e}",
@@ -55,3 +52,11 @@ class WebhookDispatcher:
                 public_message="Webhook dispatch failed.",
                 domain="webhook"
             )
+
+
+# ─── Singleton Dispatcher Instance ─────────────────────────────
+dispatcher = WebhookDispatcher()
+
+# ─── Handler Registrations ─────────────────────────────────────
+dispatcher.register(WebhookEvent.SENSOR_CREATED, SensorCreatedHandler())
+dispatcher.register(WebhookEvent.SENSOR_DATA_RECEIVED, SensorDataReceivedHandler())

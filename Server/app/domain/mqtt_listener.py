@@ -9,8 +9,8 @@ from aiomqtt import Client, MqttError
 from loguru import logger
 from pydantic import ValidationError
 
+from app.domain.webhooks.dispatcher import dispatcher
 from app.constants.webhooks import WebhookEvent
-from app.utils.dispatcher import dispatcher
 from app.domain.sensor_logic import create_sensor, get_sensor_by_id, safe_get_sensor_by_id
 from app.models.schemas.rest.sensor_schemas import SensorCreate
 from app.utils.config import settings
