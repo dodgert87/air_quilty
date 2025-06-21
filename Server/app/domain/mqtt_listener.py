@@ -9,10 +9,12 @@ from aiomqtt import Client, MqttError
 from loguru import logger
 from pydantic import ValidationError
 
+from app.constants.webhooks import WebhookEvent
+from app.utils.dispatcher import dispatcher
 from app.domain.sensor_logic import create_sensor, get_sensor_by_id, safe_get_sensor_by_id
 from app.models.schemas.rest.sensor_schemas import SensorCreate
 from app.utils.config import settings
-from app.models.schemas.rest.sensor_data_schemas import SensorDataIn
+from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut
 from app.domain.sensor_data_logic import create_sensor_data_entry
 from app.models.DB_tables.rest_logs import LogDomain
 from app.utils.logger_utils import log_background_task_error
@@ -78,11 +80,13 @@ async def listen_to_mqtt() -> None:
                                 model="GENERIC",
                                 is_active=True
                             )
-                            await create_sensor(placeholder)
+                            await create_sensor(placeholder) # type: ignore
                             logger.info(f"Created placeholder sensor for device {data.device_id}")
 
 
-                        await create_sensor_data_entry(data)
+                        stored: SensorDataOut = await create_sensor_data_entry(data)
+                        await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
+
                         #logger.info(f"Sensor data stored from {data.device_id}")
                         mqtt_state.is_running = True
                         mqtt_state.last_message_at = datetime.now(timezone.utc)

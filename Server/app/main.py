@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware import Middleware
 from sqlalchemy import text
+from app.domain.webhooks.handlers.sensor_data_received_handler import SensorDataReceivedHandler
 from app.utils.dispatcher import dispatcher
 from app.constants.webhooks import WebhookEvent
 from app.domain.webhooks.handlers.sensor_created_handler import SensorCreatedHandler
@@ -30,6 +31,7 @@ setup_logging() # Initialize logging configuration
 async def lifespan(app: FastAPI):
     await init_db()
     dispatcher.register(WebhookEvent.SENSOR_CREATED, SensorCreatedHandler())
+    dispatcher.register(WebhookEvent.SENSOR_DATA_RECEIVED, SensorDataReceivedHandler())
     task = asyncio.create_task(listen_to_mqtt())
     yield
     task.cancel()  # Cleanup if needed

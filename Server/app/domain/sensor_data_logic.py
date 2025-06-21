@@ -15,10 +15,9 @@ async def query_sensor_data_by_ranges(payload: SensorRangeQuery):
     return await paginate_query(query, page=payload.page, schema=SensorDataPartialOut, page_size=settings.DEFAULT_PAGE_SIZE)
 
 
-async def create_sensor_data_entry(payload: SensorDataIn):
-
-    return await sensor_data_repository.insert_sensor_data(payload)
-
+async def create_sensor_data_entry(payload: SensorDataIn) -> SensorDataOut:
+    db_obj = await sensor_data_repository.insert_sensor_data(payload)
+    return SensorDataOut.model_validate(db_obj)
 
 async def get_latest_entries_for_sensors(sensor_ids: list[UUID] | None):
     if not sensor_ids:
