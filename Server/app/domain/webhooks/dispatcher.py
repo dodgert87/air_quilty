@@ -2,6 +2,7 @@ from typing import Dict, Type
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.webhooks.handlers.sensor_status_changed import SensorStatusChangedHandler
 from app.domain.webhooks.handlers.sensor_created_handler import SensorCreatedHandler
 from app.domain.webhooks.handlers.sensor_data_received_handler import SensorDataReceivedHandler
 from app.constants.webhooks import WebhookEvent
@@ -60,3 +61,5 @@ dispatcher = WebhookDispatcher()
 # ─── Handler Registrations ─────────────────────────────────────
 dispatcher.register(WebhookEvent.SENSOR_CREATED, SensorCreatedHandler())
 dispatcher.register(WebhookEvent.SENSOR_DATA_RECEIVED, SensorDataReceivedHandler())
+dispatcher.register(WebhookEvent.SENSOR_STATUS_CHANGED, SensorStatusChangedHandler())
+

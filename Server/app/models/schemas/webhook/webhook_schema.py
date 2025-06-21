@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, AnyHttpUrl, Field
 from uuid import UUID
 from typing import Optional
@@ -16,8 +17,11 @@ class WebhookRead(BaseModel):
     enabled: bool
     retry_count: int
     last_error: Optional[str]
-    last_triggered_at: Optional[str]
+    last_triggered_at: Optional[datetime]
 
+    model_config = {
+        "from_attributes": True
+    }
 class WebhookDeletePayload(BaseModel):
     webhook_id: UUID
 

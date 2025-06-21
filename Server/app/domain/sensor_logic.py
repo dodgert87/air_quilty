@@ -44,11 +44,14 @@ async def list_sensors():
     return await sensor_repository.fetch_all_sensors()
 
 
-async def update_sensor(sensor_id: UUID, update_data: SensorUpdate):
+async def update_sensor(sensor_id: UUID, update_data: SensorUpdate) -> SensorOut:
     sensor = await sensor_repository.modify_sensor(sensor_id, update_data)
     if not sensor:
         raise SensorNotFoundError(sensor_id)
-    return sensor
+
+    sensor_out = SensorOut.model_validate(sensor)
+    await dispatcher.dispatch(WebhookEvent.SENSOR_STATUS_CHANGED, sensor_out)
+    return sensor_out
 
 
 async def delete_sensor(sensor_id: UUID):
