@@ -14,7 +14,7 @@ from app.utils.config import settings
 
 
 async def send_webhook(session: AsyncSession, webhook: WebhookConfig, payload: dict | BaseModel) -> None:
-    print(f"Sending webhook {webhook.id} to {webhook.target_url} with payload: {payload}")
+    #print(f"Sending webhook {webhook.id} to {webhook.target_url} with payload: {payload}")
 
     # JSON payload serialization
     if isinstance(payload, BaseModel):

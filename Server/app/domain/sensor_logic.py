@@ -1,5 +1,6 @@
-from typing import List
+from datetime import datetime, timezone
 from uuid import UUID
+from app.models.schemas.webhook.webhook_schema import SensorDeletedPayload
 from app.models.schemas.webhook.sensor_created import SensorCreatedPayload
 from app.constants.webhooks import WebhookEvent
 from app.domain.pagination import paginate_query
@@ -58,6 +59,10 @@ async def delete_sensor(sensor_id: UUID):
     success = await sensor_repository.remove_sensor(sensor_id)
     if not success:
         raise SensorNotFoundError(sensor_id)
+
+    await dispatcher.dispatch(
+    WebhookEvent.SENSOR_DELETED,
+    SensorDeletedPayload(sensor_id=sensor_id, deleted_at=datetime.now(timezone.utc)))
     return True
 
 async def list_sensors_with_placeholder() -> list[SensorOut]:

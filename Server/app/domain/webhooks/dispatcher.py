@@ -3,12 +3,11 @@ from uuid import UUID
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.webhooks.handlers.sensor_status_changed import SensorStatusChangedHandler
+from app.domain.webhooks.registry.sensor_status_registry import SensorStatusWebhookRegistry
 from app.domain.webhooks.registry.alert_registry import AlertWebhookRegistry
 from app.models.schemas.webhook.webhook_schema import WebhookConfig
 from app.domain.webhooks.handlers.alert_triggered_handler import AlertTriggeredHandler
-#from app.domain.webhooks.handlers.sensor_status_changed import SensorStatusChangedHandler
-#from app.domain.webhooks.handlers.sensor_created_handler import SensorCreatedHandler
-#from app.domain.webhooks.handlers.sensor_data_received_handler import SensorDataReceivedHandler
 from app.constants.webhooks import WebhookEvent
 from app.domain.webhooks.handlers.handler_interface import WebhookEventHandler
 
@@ -88,11 +87,29 @@ class WebhookDispatcher:
 dispatcher = WebhookDispatcher()
 
 # ─── Handler Registrations ─────────────────────────────────────
-#dispatcher.register(WebhookEvent.SENSOR_CREATED, SensorCreatedHandler())
-#dispatcher.register(WebhookEvent.SENSOR_DATA_RECEIVED, SensorDataReceivedHandler())
-#dispatcher.register(WebhookEvent.SENSOR_STATUS_CHANGED, SensorStatusChangedHandler())
+
 dispatcher.register_with_registry(
     WebhookEvent.ALERT_TRIGGERED,
     AlertTriggeredHandler(),
     AlertWebhookRegistry
+)
+dispatcher.register_with_registry(
+    WebhookEvent.SENSOR_STATUS_CHANGED,
+    SensorStatusChangedHandler(),
+    SensorStatusWebhookRegistry
+)
+dispatcher.register_with_registry(
+    WebhookEvent.SENSOR_CREATED,
+    SensorStatusChangedHandler(),
+    SensorStatusWebhookRegistry
+)
+dispatcher.register_with_registry(
+    WebhookEvent.SENSOR_DATA_RECEIVED,
+    SensorStatusChangedHandler(),
+    SensorStatusWebhookRegistry
+)
+dispatcher.register_with_registry(
+    WebhookEvent.SENSOR_DELETED,
+    SensorStatusChangedHandler(),
+    SensorStatusWebhookRegistry
 )

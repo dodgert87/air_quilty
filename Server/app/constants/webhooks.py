@@ -5,6 +5,7 @@ class WebhookEvent(str, Enum):
     SENSOR_DATA_RECEIVED = "sensor_data_received"
     ALERT_TRIGGERED = "alert_triggered"
     SENSOR_STATUS_CHANGED = "sensor_status_changed"
+    SENSOR_DELETED = "sensor_deleted"
 
 
 ROLE_TO_WEBHOOK_EVENTS = {

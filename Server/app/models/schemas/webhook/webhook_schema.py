@@ -60,3 +60,7 @@ class WebhookUpdatePayload(BaseModel):
     parameters: Optional[dict[str, tuple[Optional[float], Optional[float]]]] = None
     enabled: Optional[bool] = None
 
+
+class SensorDeletedPayload(BaseModel):
+    sensor_id: UUID
+    deleted_at: datetime

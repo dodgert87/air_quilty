@@ -72,14 +72,14 @@ async def listen_to_mqtt() -> None:
                                 continue
 
                             is_active = text.strip().lower() == "online"
-                            await ensure_sensor_exists(sensor_id, is_active=is_active)
+                            if not await ensure_sensor_exists(sensor_id, is_active=is_active):
 
-                            update_data = SensorUpdate(is_active=is_active)
-                            sensor = await modify_sensor(sensor_id, update_data)
-                            if sensor:
-                                sensor_out = SensorOut.model_validate(sensor)
-                                #await dispatcher.dispatch(WebhookEvent.SENSOR_STATUS_CHANGED, sensor_out)
-                                logger.info(f"Updated sensor {sensor_id} status to {'active' if is_active else 'inactive'} via MQTT")
+                                update_data = SensorUpdate(is_active=is_active)
+                                sensor = await modify_sensor(sensor_id, update_data)
+                                if sensor:
+                                    sensor_out = SensorOut.model_validate(sensor)
+                                    await dispatcher.dispatch(WebhookEvent.SENSOR_STATUS_CHANGED, sensor_out)
+                                    logger.info(f"Updated sensor {sensor_id} status to {'active' if is_active else 'inactive'} via MQTT")
                             continue
 
                         # ───── Sensor Data Message ─────
@@ -87,10 +87,19 @@ async def listen_to_mqtt() -> None:
                         logger.debug(f"MQTT payload parsed: {payload_dict}")
                         data = SensorDataIn(**payload_dict)
 
-                        await ensure_sensor_exists(data.device_id)
+                        if not await ensure_sensor_exists(data.device_id):
+                            placeholder = SensorCreate(
+                            sensor_id=data.device_id,
+                            name="UNKNOWN",
+                            location="PENDING",
+                            model="GENERIC",
+                            is_active=True
+                            )
+                            await create_sensor(placeholder) # type: ignore
 
                         stored: SensorDataOut = await create_sensor_data_entry(data)
-                        #await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
+
+                        await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
                         await dispatcher.dispatch(WebhookEvent.ALERT_TRIGGERED, stored)
 
                         mqtt_state.is_running = True
@@ -137,14 +146,13 @@ async def listen_to_mqtt() -> None:
 
 
 
-async def ensure_sensor_exists(sensor_id: UUID, is_active: bool = True) -> None:
-    if not await safe_get_sensor_by_id(sensor_id):
-        placeholder = SensorCreate(
-            sensor_id=sensor_id,
-            name="UNKNOWN",
-            location="PENDING",
-            model="GENERIC",
-            is_active=is_active
-        )
-        await create_sensor(placeholder)
-        logger.info(f"Created placeholder sensor for device {sensor_id}")
+async def ensure_sensor_exists(sensor_id: UUID, is_active: bool | None = None) -> bool:
+    sensor = await safe_get_sensor_by_id(sensor_id)
+
+    if not sensor:
+        logger.debug(f"Sensor {sensor_id} not found. Skipping (creation handled elsewhere).")
+        return False
+
+    if is_active is not None and sensor.is_active != is_active:
+        return False
+    return True

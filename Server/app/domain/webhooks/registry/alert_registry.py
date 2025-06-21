@@ -14,11 +14,9 @@ from app.models.DB_tables.webhook import Webhook
 
 class AlertWebhookRegistry(WebhookRegistryInterface):
     _webhooks: List[WebhookConfig] = []
-    print("AlertWebhookRegistry initialized with empty webhook list.")
 
     @classmethod
     async def load(cls, session: AsyncSession) -> None:
-        print("Loading alert webhooks from database...")
         db_webhooks: List[Webhook] = await get_active_webhooks_by_event(session, WebhookEvent.ALERT_TRIGGERED.value)
 
         parsed: List[WebhookConfig] = []
@@ -39,7 +37,6 @@ class AlertWebhookRegistry(WebhookRegistryInterface):
                 parameters=row.parameters
             )
             parsed.append(config)
-            print(f"Parsed webhook: {config.id} with parameters {config.parameters}")
 
         # Flatten and sort by (param name, min)
         def sort_key(w: WebhookConfig):
