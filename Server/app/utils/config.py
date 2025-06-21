@@ -45,7 +45,8 @@ class Settings(BaseSettings):
     # ─── MQTT Settings ───────────────────────────────────────
     MQTT_BROKER: str
     MQTT_PORT: int
-    MQTT_TOPIC: str
+    MQTT_SENSOR_DATA_TOPIC: str
+    MQTT_SENSOR_STATUS_TOPIC: str
     MQTT_QOS: int
     MQTT_RECONNECT_TIMER: int
 
