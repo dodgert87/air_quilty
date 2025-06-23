@@ -15,7 +15,6 @@ from app.models.DB_tables.base import Base
 from app.models.DB_tables.sensor_data import SensorData
 from app.models.DB_tables.user import RoleEnum, User
 from app.models.DB_tables.api_keys import APIKey
-from app.models.DB_tables.rate_limits import RateLimit
 from app.models.DB_tables.user_secrets import UserSecret
 from app.models.DB_tables.webhook_logs import WebhookLog
 from app.models.DB_tables.rest_logs import RestLog

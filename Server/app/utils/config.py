@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
 
     # ─── JWT Settings ────────────────────────────────────
-    JWT_ALGORITHM: str = "HS256"
+    JWT_ALGORITHM: str
     JWT_EXPIRATION_MINUTES: int
 
     # ─── User Secret Settings ────────────────────────────
@@ -57,6 +57,21 @@ class Settings(BaseSettings):
     # ─── Webhook const ─────────────────────────────────
     MAX_ATTEMPTS_PER_WEBHOOK: int
 
+    # ─── Rate Limit Settings ─────────────────────────────
+    REST_RATE_LIMIT: str
+    LOGIN_RATE_LIMIT: str
+    ADMIN_AUTH_RATE_LIMIT: str
+    AUTH_RATE_LIMIT: str
+    SENSOR_PUBLIC_RATE_LIMIT: str
+    SENSOR_QUERY_RATE_LIMIT: str
+    SENSOR_CREATE_RATE_LIMIT: str
+    SENSOR_META_QUERY_RATE_LIMIT: str
+    SENSOR_META_ADMIN_RATE_LIMIT: str
+    SENSOR_MQTT_MONITOR_RATE_LIMIT: str
+    GRAPHQL_DATA_QUERY_LIMIT: str
+    GRAPHQL_META_QUERY_LIMIT: str
+    WEBHOOK_QUERY_RATE_LIMIT: str
+    WEBHOOK_WRITE_RATE_LIMIT: str
 
     # Go three levels up: utils → app → Server → .env
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]
