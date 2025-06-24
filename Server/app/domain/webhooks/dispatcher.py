@@ -1,15 +1,17 @@
-from typing import Dict, Type
+from typing import Dict
 from uuid import UUID
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.webhooks.handlers.sensor_status_changed import SensorStatusChangedHandler
-from app.domain.webhooks.registry.sensor_status_registry import SensorStatusWebhookRegistry
-from app.domain.webhooks.registry.alert_registry import AlertWebhookRegistry
-from app.models.schemas.webhook.webhook_schema import WebhookConfig
-from app.domain.webhooks.handlers.alert_triggered_handler import AlertTriggeredHandler
 from app.constants.webhooks import WebhookEvent
-from app.domain.webhooks.handlers.handler_interface import WebhookEventHandler
+from app.models.schemas.webhook.webhook_schema import WebhookConfig
+from app.domain.webhooks.WebhookProcessorInterface import WebhookProcessorInterface
+# Updated imports: use unified processors
+from app.domain.webhooks.alert_processor import AlertWebhookProcessor
+from app.domain.webhooks.sensor_status_changed_processor import SensorStatusChangedProcessor
+from app.domain.webhooks.sensor_created_processor import SensorCreatedProcessor
+from app.domain.webhooks.sensor_data_received_processor import SensorDataReceivedProcessor
+from app.domain.webhooks.sensor_deleted_processor import SensorDeletedProcessor
 
 from app.utils.exceptions_base import AppException
 from app.infrastructure.database.transaction import run_in_transaction
@@ -17,25 +19,22 @@ from app.infrastructure.database.transaction import run_in_transaction
 
 class WebhookDispatcher:
     def __init__(self):
-        self._handlers: Dict[WebhookEvent, WebhookEventHandler] = {}
-        self._registry_classes: Dict[WebhookEvent, type] = {}
+        self._processors: Dict[WebhookEvent, WebhookProcessorInterface] = {}
 
-    def register_with_registry(self, event: WebhookEvent, handler: WebhookEventHandler, registry_class: type):
-        self._handlers[event] = handler
-        self._registry_classes[event] = registry_class
+    def register(self, event: WebhookEvent, processor: WebhookProcessorInterface) -> None:
+        self._processors[event] = processor
 
     def can_handle(self, event: WebhookEvent) -> bool:
-        return event in self._handlers
+        return event in self._processors
 
     async def dispatch(self, event: WebhookEvent, payload: BaseModel | dict) -> None:
-        #print(f"Dispatching event '{event}' with payload: {payload}")
-        handler = self._handlers.get(event)
-        if not handler:
+        processor = self._processors.get(event)
+        if not processor:
             return
 
         try:
             if isinstance(payload, dict):
-                raw_model = getattr(handler, "payload_model", None)
+                raw_model = getattr(processor, "payload_model", None)
                 if not isinstance(raw_model, type) or not issubclass(raw_model, BaseModel):
                     return
                 payload = raw_model.model_validate(payload)
@@ -46,7 +45,7 @@ class WebhookDispatcher:
 
         try:
             async with run_in_transaction() as session:
-                await handler.handle(payload, session=session)
+                await processor.handle(payload, session=session)
         except AppException:
             raise
         except Exception as e:
@@ -58,58 +57,45 @@ class WebhookDispatcher:
             )
 
     async def refresh_registry(self, event: WebhookEvent, session: AsyncSession) -> None:
-        registry_class = self._registry_classes.get(event)
-        if registry_class:
-            await registry_class.load(session)
+        processor = self._processors.get(event)
+        if processor:
+            await processor.load(session)
 
     def add_to_registry(self, config: WebhookConfig) -> None:
-        registry_class = self._registry_classes.get(config.event_type) # type: ignore
-        if registry_class:
-            registry_class.add(config)
+
+        event_type = config.event_type
+        if event_type is None:
+            return
+        processor = self._processors.get(event_type)
+        if processor:
+            processor.add(config)
 
     def remove_from_registry(self, webhook_id: UUID, event_type: WebhookEvent) -> None:
-        registry_class = self._registry_classes.get(event_type)
-        if registry_class:
-            registry_class.remove(webhook_id)
+        processor = self._processors.get(event_type)
+        if processor:
+            processor.remove(webhook_id)
 
     def replace_in_registry(self, config: WebhookConfig) -> None:
-        registry_class = self._registry_classes.get(config.event_type) # type: ignore
-        if registry_class:
-            registry_class.replace(config)
+        event_type = config.event_type
+        if event_type is None:
+            return
+        processor = self._processors.get(event_type)
+        if processor:
+            processor.replace(config)
 
     async def load_all_registries(self) -> None:
         async with run_in_transaction() as session:
-            for event, registry_class in self._registry_classes.items():
-                await registry_class.load(session)
+            for processor in self._processors.values():
+                await processor.load(session)
 
 
 # ─── Singleton Dispatcher Instance ─────────────────────────────
 dispatcher = WebhookDispatcher()
 
-# ─── Handler Registrations ─────────────────────────────────────
+# ─── Processor Registrations ───────────────────────────────────
 
-dispatcher.register_with_registry(
-    WebhookEvent.ALERT_TRIGGERED,
-    AlertTriggeredHandler(),
-    AlertWebhookRegistry
-)
-dispatcher.register_with_registry(
-    WebhookEvent.SENSOR_STATUS_CHANGED,
-    SensorStatusChangedHandler(),
-    SensorStatusWebhookRegistry
-)
-dispatcher.register_with_registry(
-    WebhookEvent.SENSOR_CREATED,
-    SensorStatusChangedHandler(),
-    SensorStatusWebhookRegistry
-)
-dispatcher.register_with_registry(
-    WebhookEvent.SENSOR_DATA_RECEIVED,
-    SensorStatusChangedHandler(),
-    SensorStatusWebhookRegistry
-)
-dispatcher.register_with_registry(
-    WebhookEvent.SENSOR_DELETED,
-    SensorStatusChangedHandler(),
-    SensorStatusWebhookRegistry
-)
+dispatcher.register(WebhookEvent.ALERT_TRIGGERED, AlertWebhookProcessor())
+dispatcher.register(WebhookEvent.SENSOR_STATUS_CHANGED, SensorStatusChangedProcessor())
+dispatcher.register(WebhookEvent.SENSOR_CREATED, SensorCreatedProcessor())
+dispatcher.register(WebhookEvent.SENSOR_DATA_RECEIVED, SensorDataReceivedProcessor())
+dispatcher.register(WebhookEvent.SENSOR_DELETED, SensorDeletedProcessor())
