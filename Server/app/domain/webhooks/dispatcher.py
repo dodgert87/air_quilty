@@ -2,11 +2,12 @@ from typing import Dict
 from uuid import UUID
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from loguru import logger
 
 from app.constants.webhooks import WebhookEvent
 from app.models.schemas.webhook.webhook_schema import WebhookConfig
 from app.domain.webhooks.WebhookProcessorInterface import WebhookProcessorInterface
-# Updated imports: use unified processors
+
 from app.domain.webhooks.alert_processor import AlertWebhookProcessor
 from app.domain.webhooks.sensor_status_changed_processor import SensorStatusChangedProcessor
 from app.domain.webhooks.sensor_created_processor import SensorCreatedProcessor
@@ -27,34 +28,7 @@ class WebhookDispatcher:
     def can_handle(self, event: WebhookEvent) -> bool:
         return event in self._processors
 
-    async def dispatch(self, event: WebhookEvent, payload: BaseModel | dict) -> None:
-        processor = self._processors.get(event)
-        if not processor:
-            return
 
-        try:
-            if isinstance(payload, dict):
-                raw_model = getattr(processor, "payload_model", None)
-                if not isinstance(raw_model, type) or not issubclass(raw_model, BaseModel):
-                    return
-                payload = raw_model.model_validate(payload)
-            elif not isinstance(payload, BaseModel):
-                return
-        except ValidationError:
-            return
-
-        try:
-            async with run_in_transaction() as session:
-                await processor.handle(payload, session=session)
-        except AppException:
-            raise
-        except Exception as e:
-            raise AppException(
-                message=f"Unhandled error in webhook dispatcher for event '{event}': {e}",
-                status_code=500,
-                public_message="Webhook dispatch failed.",
-                domain="webhook"
-            )
 
     async def refresh_registry(self, event: WebhookEvent, session: AsyncSession) -> None:
         processor = self._processors.get(event)
@@ -87,6 +61,44 @@ class WebhookDispatcher:
         async with run_in_transaction() as session:
             for processor in self._processors.values():
                 await processor.load(session)
+
+
+
+    async def dispatch(self, event: WebhookEvent, payload: BaseModel | dict) -> None:
+        processor = self._processors.get(event)
+        if not processor:
+            logger.warning("[WEBHOOK] No processor registered for event: %s", event)
+            return
+
+        # Validate or cast payload
+        try:
+            if isinstance(payload, dict):
+                raw_model = getattr(processor, "payload_model", None)
+                if not isinstance(raw_model, type) or not issubclass(raw_model, BaseModel):
+                    logger.error("[WEBHOOK] Processor has no valid payload model for event: %s", event)
+                    return
+                payload = raw_model.model_validate(payload)
+            elif not isinstance(payload, BaseModel):
+                logger.error("[WEBHOOK] Invalid payload type for event: %s", event)
+                return
+        except ValidationError as e:
+            logger.warning("[WEBHOOK] Payload validation failed for event %s: %s", event, str(e))
+            return
+
+        try:
+            async with run_in_transaction() as session:
+                await processor.handle(payload, session=session)
+                logger.info("[WEBHOOK] Dispatched event successfully | event=%s", event)
+        except AppException:
+            raise
+        except Exception as e:
+            logger.exception("[WEBHOOK] Unhandled exception during dispatch | event=%s", event)
+            raise AppException(
+                message=f"Unhandled error in webhook dispatcher for event '{event}': {e}",
+                status_code=500,
+                public_message="Webhook dispatch failed.",
+                domain="webhook"
+            )
 
 
 # ─── Singleton Dispatcher Instance ─────────────────────────────

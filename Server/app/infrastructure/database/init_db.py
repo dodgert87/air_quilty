@@ -1,8 +1,6 @@
+from loguru import logger
 from app.utils.crypto_utils import encrypt_secret
-from app.utils.logging_config import setup_logging
-setup_logging()
 
-import logging
 from sqlalchemy.exc import SQLAlchemyError
 from app.infrastructure.database.repository.restAPI import secret_repository, user_repository
 from app.infrastructure.database.transaction import run_in_transaction
@@ -20,32 +18,30 @@ from app.models.DB_tables.rest_logs import RestLog
 from app.models.DB_tables.sensor import Sensor
 from app.models.DB_tables.webhook import Webhook
 
-logger = logging.getLogger(__name__)
-
 async def init_db():
+    # Step 1: Create Tables
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables checked and initialized.")
+        logger.info("[DB INIT] Database tables checked and initialized.")
     except SQLAlchemyError as e:
-        logger.error(f"Failed to initialize the database: {e}")
+        logger.exception("[DB INIT] SQLAlchemy error during initialization")
         return
     except Exception as ex:
-        logger.error(f"Unexpected error during DB init: {ex}")
+        logger.exception("[DB INIT] Unexpected error during table creation")
         return
 
-    # Bootstrap admin user
+    # Step 2: Bootstrap Admin User
     try:
         async with run_in_transaction() as session:
             existing = await user_repository.get_user_by_email(session, settings.ADMIN_EMAIL)
             if existing:
-                logger.info("Admin user already exists.")
+                logger.info("[DB INIT] Admin user already exists.")
                 return
 
-            logger.info("Creating default admin user...")
+            logger.info("[DB INIT] Creating default admin user...")
 
             hashed_pw = hash_value(settings.ADMIN_PASSWORD.get_secret_value())
-
             admin_user = await user_repository.create_user(
                 session,
                 email=settings.ADMIN_EMAIL,
@@ -63,7 +59,7 @@ async def init_db():
                 expires_at=get_secret_expiry()
             )
 
-            logger.info(f"Default admin user initialized: {settings.ADMIN_EMAIL}")
+            logger.success(f"[DB INIT] Default admin user initialized: {settings.ADMIN_EMAIL}")
 
     except Exception as ex:
-        logger.error(f"Failed to initialize admin user: {ex}")
+        logger.exception("[DB INIT] Failed to initialize admin user")

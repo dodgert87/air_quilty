@@ -8,36 +8,47 @@ from app.domain.pagination import paginate_query
 from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut, SensorDataPartialOut, SensorQuery, SensorRangeQuery, SensorTimestampQuery
 from app.utils.config import settings
 from app.utils.exceptions_base import AppException
+from loguru import logger
+
 
 
 async def query_sensor_data_by_ranges(payload: SensorRangeQuery):
+    logger.info("[SENSOR_DATA] Range query | fields=%s | page=%d", payload.ranges, payload.page)
     query = await sensor_data_repository.search_by_attribute_ranges(payload)
     return await paginate_query(query, page=payload.page, schema=SensorDataPartialOut, page_size=settings.DEFAULT_PAGE_SIZE)
 
 
 async def create_sensor_data_entry(payload: SensorDataIn) -> SensorDataOut:
     db_obj = await sensor_data_repository.insert_sensor_data(payload)
+    logger.info("[SENSOR_DATA] Created data entry | sensor_id=%s | ts=%s", payload.device_id, payload.timestamp)
     return SensorDataOut.model_validate(db_obj)
+
 
 async def get_latest_entries_for_sensors(sensor_ids: list[UUID] | None):
     if not sensor_ids:
-        sensors: list[Sensor] = await sensor_repository.fetch_all_sensors()
+        sensors = await sensor_repository.fetch_all_sensors()
         sensor_ids = [sensor.sensor_id for sensor in sensors]
+        logger.info("[SENSOR_DATA] No sensor_ids provided, defaulting to all (%d)", len(sensor_ids))
 
     valid_ids = []
     for sid in sensor_ids:
         if await sensor_repository.fetch_sensor_by_id(sid):
             valid_ids.append(sid)
+        else:
+            logger.warning("[SENSOR_DATA] Skipping invalid sensor ID: %s", sid)
 
     results = []
     for sid in valid_ids:
         entry = await sensor_data_repository.fetch_latest_by_sensor(sid)
         if entry:
             results.append(entry)
+
+    logger.info("[SENSOR_DATA] Fetched latest entries | sensors=%d | results=%d", len(valid_ids), len(results))
     return results
 
 
 async def query_sensor_data_by_timestamps(payload: SensorTimestampQuery):
+    logger.info("[SENSOR_DATA] Timestamp query | timestamps=%s | exact=%s | page=%d", payload.timestamps, payload.exact, payload.page)
     query = await sensor_data_repository.search_by_timestamps(payload)
     return await paginate_query(query, page=payload.page, schema=SensorDataOut, page_size=settings.DEFAULT_PAGE_SIZE)
 
@@ -45,6 +56,7 @@ async def query_sensor_data_by_timestamps(payload: SensorTimestampQuery):
 async def get_all_data_by_sensor(payload: SensorQuery):
     sensor = await sensor_repository.fetch_sensor_by_id(payload.sensor_id)
     if not sensor:
+        logger.warning("[SENSOR_DATA] Sensor not found | id=%s", payload.sensor_id)
         raise AppException(
             message=f"Sensor ID {payload.sensor_id} not found",
             status_code=404,
@@ -52,10 +64,13 @@ async def get_all_data_by_sensor(payload: SensorQuery):
             domain="sensor"
         )
 
+    logger.info("[SENSOR_DATA] Querying all data for sensor | id=%s | page=%d", payload.sensor_id, payload.page)
     query = await sensor_data_repository.search_by_sensor_id(payload.sensor_id)
     return await paginate_query(query, schema=SensorDataOut, page=payload.page, page_size=settings.DEFAULT_PAGE_SIZE)
 
 
 async def query_sensor_data_advanced(payload: SensorDataAdvancedQuery):
+    logger.info("[SENSOR_DATA] Advanced GraphQL query | query=%s | page=%d", payload.model_dump(), payload.page)
+
     query = await sensor_data_graphql_repository.build_sensor_data_query(payload)
     return await paginate_query(query, page=payload.page, schema=SensorDataOut, page_size=payload.page_size or settings.DEFAULT_PAGE_SIZE)

@@ -3,6 +3,7 @@ import hmac
 import hashlib
 import json
 import httpx
+from loguru import logger
 from pydantic import BaseModel
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,15 +15,11 @@ from app.utils.config import settings
 
 
 async def send_webhook(session: AsyncSession, webhook: WebhookConfig, payload: dict | BaseModel) -> None:
-    #print(f"Sending webhook {webhook.id} to {webhook.target_url} with payload: {payload}")
-
-    # JSON payload serialization
     if isinstance(payload, BaseModel):
         payload_json = payload.model_dump_json()
     else:
         payload_json = json.dumps(payload, default=fallback_serializer, separators=(",", ":"), sort_keys=True)
 
-    # Signature generation
     raw_secret = webhook.secret.get_secret_value()
     signature = hmac.new(
         raw_secret.encode("utf-8"),
@@ -38,10 +35,8 @@ async def send_webhook(session: AsyncSession, webhook: WebhookConfig, payload: d
     if webhook.custom_headers:
         headers.update(webhook.custom_headers)
 
-    # Retry mechanism
     max_attempts = settings.MAX_ATTEMPTS_PER_WEBHOOK
     last_error = None
-
 
     for attempt in range(max_attempts):
         try:
@@ -51,20 +46,22 @@ async def send_webhook(session: AsyncSession, webhook: WebhookConfig, payload: d
             status = response.status_code
 
             if 200 <= status < 300:
-                print(f"Webhook {webhook.id} sent successfully on attempt {attempt + 1}")
+                logger.info("[WEBHOOK] Sent successfully | id=%s | url=%s | attempt=%d", webhook.id, webhook.target_url, attempt + 1)
                 return
 
             elif 500 <= status < 600:
                 last_error = f"HTTP {status}: {response.text}"
+                logger.warning("[WEBHOOK] Server error | id=%s | attempt=%d | error=%s", webhook.id, attempt + 1, last_error)
 
             else:
-                print(f"Webhook {webhook.id} failed permanently with status {status}: {response.text}")
+                logger.error("[WEBHOOK] Permanent failure | id=%s | status=%d | response=%s", webhook.id, status, response.text)
                 return
 
         except Exception as e:
             last_error = str(e)
+            logger.warning("[WEBHOOK] Network/Send error | id=%s | attempt=%d | error=%s", webhook.id, attempt + 1, last_error)
 
-    print(f"Webhook {webhook.id} failed after {max_attempts} attempts. Last error: {last_error}")
+    logger.error("[WEBHOOK] Failed after %d attempts | id=%s | last_error=%s", max_attempts, webhook.id, last_error)
     await update_webhook_retry(session, webhook.id, last_error=last_error)
 
 # fallback for dicts (e.g., if dispatcher accepted a raw dict)

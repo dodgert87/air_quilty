@@ -2,6 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from uuid import UUID
+from loguru import logger
 
 from app.infrastructure.database.transaction import run_in_transaction
 from app.utils.jwt_utils import decode_jwt_unverified, decode_jwt
@@ -35,8 +36,9 @@ class LoginAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        # Enforce HTTPS unless in local environment
+        # Enforce HTTPS unless in dev
         if request.url.scheme != "https" and settings.ENV != "local":
+            logger.warning(f"[LoginAuth] HTTPS enforcement triggered for path {path}")
             return JSONResponse(
                 status_code=403,
                 content={"detail": "HTTPS is required"}
@@ -47,51 +49,54 @@ class LoginAuthMiddleware(BaseHTTPMiddleware):
 
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.removeprefix("Bearer ").strip()
+            logger.debug(f"[LoginAuth] Bearer token received")
 
-            # Try from cache first
             user = LoginAuthProcessor.get(token)
-
-            if user is None:
+            if user:
+                logger.debug(f"[LoginAuth] Token hit in cache for user {user.id}")
+            else:
                 try:
-                    # Step 1: Decode unverified token to extract user_id
-                    payload_unverified = decode_jwt_unverified(token)
-                    user_id = UUID(payload_unverified.get("sub", ""))
+                    logger.debug("[LoginAuth] Decoding JWT without verification to extract user ID")
+                    unverified = decode_jwt_unverified(token)
+                    user_id = UUID(unverified.get("sub", ""))
 
-                    # Step 2: Fetch "login" secret for that user
                     async with run_in_transaction() as session:
                         login_secret = await get_user_secret_by_label(session, user_id, label="login")
                         if not login_secret or not login_secret.is_active:
                             raise AuthValidationError("Login secret not found or inactive")
 
-                    # Step 3: Use decrypted secret to verify JWT
-                    decode_jwt(token, secret=decrypt_secret(login_secret.secret))
+                        decode_jwt(token, secret=decrypt_secret(login_secret.secret))
+                        user = await get_user_by_id(session, user_id)
+                        if not user:
+                            raise AuthValidationError("User not found")
 
-                    # Step 4: Fetch and cache user
-                    user = await get_user_by_id(session, user_id)
-                    if not user:
-                        raise AuthValidationError("User not found")
+                        LoginAuthProcessor.add(token, user)
+                        logger.debug(f"[LoginAuth] Token validated and user {user.id} cached")
 
-                    LoginAuthProcessor.add(token, user)
-
-                except AppException as e:
+                except AppException as ae:
+                    logger.warning(f"[LoginAuth] Auth exception: {ae.public_message}")
                     return JSONResponse(
-                        status_code=e.status_code,
-                        content={"error": "Invalid or missing authentication."}
+                        status_code=ae.status_code,
+                        content={"error": ae.public_message}
                     )
                 except Exception as e:
-                    return JSONResponse(status_code=401, content={"detail": f"Token error: {str(e)}"})
+                    logger.exception("[LoginAuth] Unexpected JWT error")
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "Token validation failed"}
+                    )
 
-            request.state.user = user
-            request.state.user_id = user.id if user else None
-        else:
-            request.state.user = None
+        request.state.user = user
+        request.state.user_id = user.id if user else None
 
-        # Role-based access enforcement
+        # Role-based access check
         for prefix, allowed_roles in PATH_ROLE_MAP.items():
             if path.startswith(prefix):
                 if user is None:
+                    logger.warning(f"[LoginAuth] Access denied to unauthenticated user on {path}")
                     return JSONResponse(status_code=401, content={"detail": "Authentication required"})
                 if user.role not in allowed_roles:
+                    logger.warning(f"[LoginAuth] Access denied for user {user.id} with role {user.role}")
                     return JSONResponse(status_code=403, content={"detail": f"Access denied for role: {user.role}"})
                 break
 

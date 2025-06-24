@@ -3,6 +3,8 @@ from uuid import UUID
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.DB_tables.webhook import Webhook
+from app.utils.exceptions_base import AppException
+from loguru import logger
 
 async def get_webhooks_by_user(session: AsyncSession, user_id: UUID) -> List[Webhook]:
     result = await session.execute(
@@ -38,20 +40,51 @@ async def get_webhook_by_id_and_user(session: AsyncSession, webhook_id: UUID, us
     return result.scalar_one_or_none()
 
 async def create_webhook(session: AsyncSession, webhook: Webhook) -> Webhook:
-    session.add(webhook)
-    await session.flush()
-    return webhook
+    try:
+        session.add(webhook)
+        await session.flush()
+        logger.info(f"Webhook created: {webhook.id} for user {webhook.user_id}")
+        return webhook
+    except Exception as e:
+        logger.error(f"Failed to create webhook: {e}")
+        raise AppException(
+            message=f"Failed to create webhook: {e}",
+            status_code=500,
+            public_message="Webhook creation failed.",
+            domain="webhook"
+        )
 
 async def update_webhook(session: AsyncSession, webhook: Webhook) -> Webhook:
-    session.add(webhook)
-    await session.flush()
-    return webhook
+    try:
+        session.add(webhook)
+        await session.flush()
+        logger.info(f"Webhook updated: {webhook.id}")
+        return webhook
+    except Exception as e:
+        logger.error(f"Failed to update webhook {webhook.id}: {e}")
+        raise AppException(
+            message=f"Failed to update webhook {webhook.id}: {e}",
+            status_code=500,
+            public_message="Webhook update failed.",
+            domain="webhook"
+        )
 
 async def delete_webhook(session: AsyncSession, webhook_id: UUID, user_id: UUID) -> bool:
-    result = await session.execute(
-        delete(Webhook).where(
-            Webhook.id == webhook_id,
-            Webhook.user_id == user_id
+    try:
+        result = await session.execute(
+            delete(Webhook).where(
+                Webhook.id == webhook_id,
+                Webhook.user_id == user_id
+            )
         )
-    )
-    return result.rowcount > 0
+        deleted = result.rowcount > 0
+        logger.info(f"Webhook delete for user {user_id}: ID {webhook_id}, success={deleted}")
+        return deleted
+    except Exception as e:
+        logger.error(f"Failed to delete webhook {webhook_id} for user {user_id}: {e}")
+        raise AppException(
+            message=f"Failed to delete webhook {webhook_id}: {e}",
+            status_code=500,
+            public_message="Webhook deletion failed.",
+            domain="webhook"
+        )

@@ -11,12 +11,21 @@ class AppException(Exception):
         domain: str = "other",
         public_message: Optional[str] = None,
     ):
-        self.message = message                    # full internal message (for logs)
-        self.status_code = status_code            # HTTP code
-        self.public_message = public_message or   "An unexpected error occurred"
-        self.domain = domain                      # Used for LogDomain if mapped
+        self.message = message                          # internal log message
+        self.internal_message = message                 # alias for clarity in logs
+        self.status_code = status_code
+        self.public_message = public_message or "An unexpected error occurred"
+        self.domain = domain
         super().__init__(message)
 
+    @staticmethod
+    def from_internal_error(msg: str, domain: str = "other") -> "AppException":
+        return AppException(
+            message=msg,
+            public_message="Internal server error",
+            domain=domain,
+            status_code=500,
+        )
 
 # Example domain exceptions
 class AuthError(AppException):

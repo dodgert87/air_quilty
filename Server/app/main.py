@@ -7,9 +7,6 @@ from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
 
 from app.domain.api_key_processor import APIKeyAuthProcessor
-from app.infrastructure.database.transaction import run_in_transaction
-from app.constants.webhooks import WebhookEvent
-from app.middleware.RestLoggerMiddleware import RestLoggerMiddleware
 from app.exception_handlers import app_exception_handler, fallback_exception_handler, validation_error_handler
 from app.utils.exceptions_base import AppException
 
@@ -25,14 +22,15 @@ from app.api.graphql.router import graphql_router
 from app.api.webhook.router import router as webhook_router
 from app.domain.webhooks.dispatcher import dispatcher
 
-from app.utils.logging_config import setup_logging
+from app.domain.logging.logging_config import setup_logger
+from loguru import logger
 from app.domain.mqtt_listener import listen_to_mqtt
 
 
 
 
 # ─── Logging Setup ───────────────────────────────────────────
-setup_logging()
+setup_logger()
 
 # ─── App Lifespan Logic ──────────────────────────────────────
 @asynccontextmanager
@@ -48,7 +46,6 @@ async def lifespan(app: FastAPI):
 middleware = [
     Middleware(LoginAuthMiddleware),
     Middleware(APIKeyAuthMiddleware),
-    Middleware(RestLoggerMiddleware),
 ]
 
 # ─── FastAPI App Init ────────────────────────────────────────

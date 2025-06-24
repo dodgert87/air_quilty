@@ -32,26 +32,29 @@ class Query:
         filters: SensorDataQueryInput,
         info
     ) -> PaginatedSensorData:
-        """
-        Query: sensor_data
-        - Filter sensor data by timestamps and value ranges.
-        - Rate limited using GRAPHQL_DATA_QUERY_LIMIT from .env
-        """
         request = info.context["request"]
         await limiter.limit(settings.GRAPHQL_DATA_QUERY_LIMIT)(request)
 
-        logger.info("[GraphQL] sensor_data called with filters=%s", filters)
-        pyd_query = map_graphql_to_pydantic_sensor_data_query(filters)
-        response = await query_sensor_data_advanced(pyd_query)
+        try:
+            logger.info("[GraphQL] sensor_data called | filters=%s", filters)
+            pyd_query = map_graphql_to_pydantic_sensor_data_query(filters)
+            response = await query_sensor_data_advanced(pyd_query)
 
-        logger.info("[GraphQL] sensor_data returned total=%d, items=%d", response.total, len(response.items))
-        items = [SensorData(**item.model_dump()) for item in response.items]
-        return PaginatedSensorData(
-            items=items,
-            total=response.total,
-            page=response.page,
-            page_size=response.page_size,
-        )
+            logger.info("[GraphQL] sensor_data succeeded | total=%d, items=%d", response.total, len(response.items))
+            items = [SensorData(**item.model_dump()) for item in response.items]
+            return PaginatedSensorData(
+                items=items,
+                total=response.total,
+                page=response.page,
+                page_size=response.page_size,
+            )
+
+        except Exception as e:
+            logger.exception("[GraphQL] sensor_data failed | filters=%s | error=%s", filters, str(e))
+            from app.utils.exceptions_base import AppException
+            raise AppException.from_internal_error("Sensor data query failed", domain="sensor")
+
+
 
     @strawberry.field
     async def sensor_metadata(
@@ -59,25 +62,27 @@ class Query:
         filters: SensorMetadataQueryInput,
         info
     ) -> PaginatedSensorMetadata:
-        """
-        Query: sensor_metadata
-        - Return filtered, paginated sensor metadata.
-        - Rate limited using GRAPHQL_META_QUERY_LIMIT from .env
-        """
         request = info.context["request"]
         await limiter.limit(settings.GRAPHQL_META_QUERY_LIMIT)(request)
 
-        logger.info("[GraphQL] sensor_metadata (unified) called with filters=%s", filters)
-        pyd_query = map_graphql_to_pydantic_metadata_query(filters)
-        response = await query_sensor_metadata_advanced(pyd_query)
+        try:
+            logger.info("[GraphQL] sensor_metadata called | filters=%s", filters)
+            pyd_query = map_graphql_to_pydantic_metadata_query(filters)
+            response = await query_sensor_metadata_advanced(pyd_query)
 
-        items = [Sensor(**SensorOut.model_validate(s).model_dump()) for s in response.items]
-        return PaginatedSensorMetadata(
-            items=items,
-            total=response.total,
-            page=response.page,
-            page_size=response.page_size,
-        )
+            items = [Sensor(**SensorOut.model_validate(s).model_dump()) for s in response.items]
+            logger.info("[GraphQL] sensor_metadata succeeded | total=%d, items=%d", response.total, len(response.items))
+            return PaginatedSensorMetadata(
+                items=items,
+                total=response.total,
+                page=response.page,
+                page_size=response.page_size,
+            )
+
+        except Exception as e:
+            logger.exception("[GraphQL] sensor_metadata failed | filters=%s | error=%s", filters, str(e))
+            from app.utils.exceptions_base import AppException
+            raise AppException.from_internal_error("Sensor metadata query failed", domain="sensor")
 
 
 

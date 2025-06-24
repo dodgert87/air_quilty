@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     # ─── Default Password ────────────────────────────────
     DEFAULT_USER_PASSWORD: SecretStr
 
-
     # ─── JWT Settings ────────────────────────────────────
     JWT_ALGORITHM: str
     JWT_EXPIRATION_MINUTES: int
@@ -26,13 +25,13 @@ class Settings(BaseSettings):
     # ─── User Secret Settings ────────────────────────────
     USER_SECRET_LENGTH: int
     USER_SECRET_EXPIRATION_DAYS: int
-    MAX_SECRETS_PER_USER: int  # active only
+    MAX_SECRETS_PER_USER: int
     MASTER_ENCRYPTION_KEY: SecretStr
 
     # ─── API Key Settings ────────────────────────────────
     API_KEY_LENGTH: int
     API_KEY_EXPIRATION_DAYS: int
-    MAX_API_KEYS_PER_USER: int   # active only
+    MAX_API_KEYS_PER_USER: int
 
     # ─── Admin Bootstrap ─────────────────────────────
     ADMIN_EMAIL: str
@@ -40,7 +39,7 @@ class Settings(BaseSettings):
 
     # ─── Pagination Settings ────────────────────────────────
     DEFAULT_PAGE_SIZE: int
-    MAX_PAGE_SIZE: int  # Maximum allowed page size for queries
+    MAX_PAGE_SIZE: int
 
     # ─── MQTT Settings ───────────────────────────────────────
     MQTT_BROKER: str
@@ -73,7 +72,7 @@ class Settings(BaseSettings):
     WEBHOOK_QUERY_RATE_LIMIT: str
     WEBHOOK_WRITE_RATE_LIMIT: str
 
-    # Go three levels up: utils → app → Server → .env
+    # ─── File & Path Settings ───────────────────────────────
     project_root: ClassVar[Path] = Path(__file__).resolve().parents[2]
     env_file_path: ClassVar[Path] = project_root / ".env"
 
@@ -82,11 +81,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
-
-    if not env_file_path.exists():
-        logger.warning(f".env file NOT found at: {env_file_path}")
-    else:
-        logger.info(f".env loaded from: {env_file_path}")
 
     @property
     def active_database_url(self) -> str:
@@ -100,12 +94,13 @@ class Settings(BaseSettings):
             return self.DATABASE_URL_LOCAL
 
 
-# Try to load the settings
+# ─── Initialization ─────────────────────────────────────────
 try:
-    settings = Settings() # type: ignore
+    settings = Settings()  # type: ignore
+    logger.info(f".env loaded from: {Settings.env_file_path}")
 except ValidationError as e:
     logger.error(f"Validation error in settings: {e}")
     settings = None
 except Exception as e:
-    logger.warning(f"Could not load settings from .env file or environment: {e}")
+    logger.warning(f"Could not load settings from .env or environment: {e}")
     settings = None

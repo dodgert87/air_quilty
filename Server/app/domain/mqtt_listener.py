@@ -11,13 +11,11 @@ from pydantic import ValidationError
 from app.infrastructure.database.repository.restAPI.sensor_repository import modify_sensor
 from app.domain.webhooks.dispatcher import dispatcher
 from app.constants.webhooks import WebhookEvent
-from app.domain.sensor_logic import create_sensor, get_sensor_by_id, safe_get_sensor_by_id
+from app.domain.sensor_logic import create_sensor, safe_get_sensor_by_id
 from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorOut, SensorUpdate
 from app.utils.config import settings
 from app.models.schemas.rest.sensor_data_schemas import SensorDataIn, SensorDataOut
 from app.domain.sensor_data_logic import create_sensor_data_entry
-from app.models.DB_tables.rest_logs import LogDomain
-from app.utils.logger_utils import log_background_task_error
 
 class MQTTListenerState:
     is_running: bool = False
@@ -61,6 +59,7 @@ async def listen_to_mqtt() -> None:
                             continue
 
                         topic = message.topic.value
+                        logger.info("[MQTT] Message received | topic=%s", topic)
 
                         # ───── Sensor Status Message ─────
                         if topic.startswith("A3/AirQuality/Connection/"):
@@ -72,8 +71,8 @@ async def listen_to_mqtt() -> None:
                                 continue
 
                             is_active = text.strip().lower() == "online"
-                            if not await ensure_sensor_exists(sensor_id, is_active=is_active):
 
+                            if not await ensure_sensor_exists(sensor_id, is_active=is_active):
                                 update_data = SensorUpdate(is_active=is_active)
                                 sensor = await modify_sensor(sensor_id, update_data)
                                 if sensor:
@@ -87,20 +86,25 @@ async def listen_to_mqtt() -> None:
                         logger.debug(f"MQTT payload parsed: {payload_dict}")
                         data = SensorDataIn(**payload_dict)
 
+                        logger.info("[MQTT] Processing sensor data | device_id=%s", data.device_id)
+
                         if not await ensure_sensor_exists(data.device_id):
                             placeholder = SensorCreate(
-                            sensor_id=data.device_id,
-                            name="UNKNOWN",
-                            location="PENDING",
-                            model="GENERIC",
-                            is_active=True
+                                sensor_id=data.device_id,
+                                name="UNKNOWN",
+                                location="PENDING",
+                                model="GENERIC",
+                                is_active=True
                             )
-                            await create_sensor(placeholder) # type: ignore
+                            await create_sensor(placeholder)  # type: ignore
+                            logger.info("[MQTT] Created placeholder sensor | sensor_id=%s", data.device_id)
 
                         stored: SensorDataOut = await create_sensor_data_entry(data)
 
                         await dispatcher.dispatch(WebhookEvent.SENSOR_DATA_RECEIVED, stored)
                         await dispatcher.dispatch(WebhookEvent.ALERT_TRIGGERED, stored)
+
+                        logger.info("[MQTT] Dispatched SENSOR_DATA_RECEIVED and ALERT_TRIGGERED | sensor_id=%s", data.device_id)
 
                         mqtt_state.is_running = True
                         mqtt_state.last_message_at = datetime.now(timezone.utc)
@@ -113,20 +117,10 @@ async def listen_to_mqtt() -> None:
                     except Exception as ex:
                         tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
                         logger.error(f"Error processing MQTT message:\n{tb}")
-                        await log_background_task_error(
-                            domain=LogDomain.SENSOR,
-                            error_message=tb,
-                            context_label="MQTT_MESSAGE",
-                        )
 
         except MqttError as conn_error:
             mqtt_state.is_running = False
-            tb = "".join(traceback.format_exception(type(conn_error), conn_error, conn_error.__traceback__))
-            await log_background_task_error(
-                domain=LogDomain.SENSOR,
-                error_message=tb,
-                context_label="MQTT_RECONNECT",
-            )
+            logger.warning("[MQTT] Connection error: %s | Reconnecting in 5s…", str(conn_error))
             await asyncio.sleep(5)
 
         except asyncio.CancelledError:
@@ -137,11 +131,7 @@ async def listen_to_mqtt() -> None:
         except Exception as fatal:
             mqtt_state.is_running = False
             tb = "".join(traceback.format_exception(type(fatal), fatal, fatal.__traceback__))
-            await log_background_task_error(
-                domain=LogDomain.SENSOR,
-                error_message=tb,
-                context_label="MQTT_FATAL",
-            )
+            logger.critical("[MQTT] Fatal error in listener | restarting in %ss", settings.MQTT_RECONNECT_TIMER)
             await asyncio.sleep(settings.MQTT_RECONNECT_TIMER)
 
 
@@ -150,9 +140,11 @@ async def ensure_sensor_exists(sensor_id: UUID, is_active: bool | None = None) -
     sensor = await safe_get_sensor_by_id(sensor_id)
 
     if not sensor:
-        logger.debug(f"Sensor {sensor_id} not found. Skipping (creation handled elsewhere).")
+        logger.debug(f"[MQTT] Sensor {sensor_id} not found. Skipping (creation handled elsewhere).")
         return False
 
     if is_active is not None and sensor.is_active != is_active:
+        logger.info("[MQTT] Sensor %s found but active state mismatch: DB=%s vs MQTT=%s", sensor_id, sensor.is_active, is_active)
         return False
+
     return True
