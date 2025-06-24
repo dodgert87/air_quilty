@@ -3,6 +3,8 @@ from typing import List, Optional
 from uuid import UUID
 import re
 
+from pydantic import SecretStr
+
 from app.utils.crypto_utils import decrypt_secret, encrypt_secret
 from app.infrastructure.database.repository.restAPI import secret_repository
 from app.infrastructure.database.repository.restAPI import user_repository
@@ -11,7 +13,7 @@ from app.models.DB_tables.user_secrets import UserSecret
 from app.models.DB_tables.user import User
 from app.infrastructure.database.repository.restAPI import api_key_repository
 from app.utils.jwt_utils import decode_jwt, decode_jwt_unverified, generate_jwt
-from app.models.schemas.rest.auth_schemas import LoginResponse, NewUserInput, OnboardResult, SecretCreateRequest, SecretCreateResponse, SecretInfo
+from app.models.schemas.rest.auth_schemas import GeneratedAPIKey, LoginResponse, NewUserInput, OnboardResult, SecretCreateRequest, SecretCreateResponse, SecretInfo
 from app.utils.secret_utils import generate_api_key, generate_secret, get_api_key_expiry, get_secret_expiry
 from app.utils.hashing import hash_value, verify_value
 from app.utils.config import settings
@@ -137,7 +139,7 @@ async def validate_token_and_get_user(token: str) -> User:
         return user
 
 
-async def generate_api_key_for_user(user_id: UUID, label: str) -> str:
+async def generate_api_key_for_user(user_id: UUID, label: str) -> GeneratedAPIKey:
     async with run_in_transaction() as session:
         keys = await api_key_repository.get_api_keys_by_user(session, user_id)
 
@@ -162,7 +164,7 @@ async def generate_api_key_for_user(user_id: UUID, label: str) -> str:
             expires_at=get_api_key_expiry()
         )
 
-    return raw_key
+    return  GeneratedAPIKey(raw_key=raw_key, hashed_key=SecretStr(hashed_key))
 
 
 async def validate_api_key(api_key: str) -> User:
@@ -179,12 +181,12 @@ async def validate_api_key(api_key: str) -> User:
         raise AuthValidationError("Invalid or inactive API key")
 
 
-async def delete_api_key_for_user(user_id: UUID, label: str) -> None:
+async def delete_api_key_for_user(user_id: UUID, label: str) -> str:
     async with run_in_transaction() as session:
-        deleted = await api_key_repository.delete_api_key_by_label(session, user_id, label)
-        if not deleted:
-            raise UserNotFoundError(f"API key with label '{label}'")
-
+        deleted_key = await api_key_repository.delete_api_key_by_label(session, user_id, label)
+        if not deleted_key:
+            raise UserNotFoundError(f"API key with label '{label}' not found")
+        return deleted_key
 
 def parse_full_name(name: str) -> tuple[str, str]:
     parts = re.split(r"\s+", name.strip())

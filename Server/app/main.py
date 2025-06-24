@@ -6,6 +6,7 @@ from starlette.middleware import Middleware
 from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
 
+from app.domain.api_key_processor import APIKeyAuthProcessor
 from app.infrastructure.database.transaction import run_in_transaction
 from app.constants.webhooks import WebhookEvent
 from app.middleware.RestLoggerMiddleware import RestLoggerMiddleware
@@ -38,6 +39,7 @@ setup_logging()
 async def lifespan(app: FastAPI):
     await init_db()
     await dispatcher.load_all_registries()
+    await APIKeyAuthProcessor.load()
     task = asyncio.create_task(listen_to_mqtt())
     yield
     task.cancel()

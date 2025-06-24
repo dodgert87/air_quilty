@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Request, status
 from typing import List
+
+from pydantic import SecretStr
+from app.domain.api_key_processor import APIKeyAuthProcessor
 from app.utils.config import settings
 from app.middleware.rate_limit_middleware import limiter
 from app.models.schemas.rest.auth_schemas import (
-    APIKeyDeleteRequest, APIKeyRequest, ChangePasswordRequest, LoginRequest,
+    APIKeyConfig, APIKeyDeleteRequest, APIKeyRequest, ChangePasswordRequest, LoginRequest,
     LoginResponse, OnboardResult, SecretCreateRequest, SecretCreateResponse,
     SecretInfo, SecretLabelPayload, SecretLabelQuery, SecretTogglePayload,
     UserLookupPayload, UserOnboardRequest, UserResponse
@@ -68,6 +71,7 @@ async def change_password(payload: ChangePasswordRequest, request: Request):
     if user is None:
         raise AuthValidationError("Authentication required")
     await change_user_password(user, payload.old_password, payload.new_password, payload.label)
+    APIKeyAuthProcessor.invalidate_user(user.id)
     return {"message": "Password updated successfully"}
 
 
@@ -94,9 +98,15 @@ async def generate_api_key(request: Request, body: APIKeyRequest):
     user = getattr(request.state, "user", None)
     if user is None:
         raise AuthValidationError("Authentication required")
-    key = await generate_api_key_for_user(user.id, label=body.label)
+    key_obj  = await generate_api_key_for_user(user.id, label=body.label)
+    APIKeyAuthProcessor.add(APIKeyConfig(
+        user_id=user.id,
+        key=key_obj.hashed_key,
+        role=user.role
+    ))
+
     return {
-        "key": key,
+        "key": key_obj.raw_key,
         "label": body.label or "default",
         "note": "Store this securely. It won't be shown again."
     }
@@ -105,11 +115,15 @@ async def generate_api_key(request: Request, body: APIKeyRequest):
 @router.delete("/delete-api-key", status_code=status.HTTP_200_OK)
 @limiter.limit(settings.AUTH_RATE_LIMIT)
 async def delete_api_key(request: Request, payload: APIKeyDeleteRequest):
-    """Delete a user's API key by label."""
     user = getattr(request.state, "user", None)
     if user is None:
         raise AuthValidationError("Authentication required")
-    await delete_api_key_for_user(user.id, payload.label)
+
+    deleted_key = await delete_api_key_for_user(user.id, payload.label)
+
+    # Remove from processor (hash is already stored)
+    APIKeyAuthProcessor.remove(deleted_key)
+
     return {"message": f"API key with label '{payload.label}' has been deleted."}
 
 # ──────────────── Profile and Secrets ───────────── #

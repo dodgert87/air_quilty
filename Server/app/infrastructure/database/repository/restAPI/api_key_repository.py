@@ -35,15 +35,16 @@ async def create_api_key(
         )
 
 
-async def delete_api_key_by_label(session: AsyncSession, user_id: UUID, label: str) -> bool:
+async def delete_api_key_by_label(session: AsyncSession, user_id: UUID, label: str) -> str | None :
     try:
         result = await session.execute(
             delete(APIKey)
             .where(APIKey.user_id == user_id, APIKey.label == label)
-            .returning(APIKey.label)
+            .returning(APIKey.key)
         )
-        deleted_label = result.scalar_one_or_none()
-        return deleted_label is not None
+        deleted_key = result.scalar_one_or_none()
+        return deleted_key
+
     except Exception as e:
         raise AppException(
             message=f"Failed to delete API key with label '{label}' for user {user_id}: {e}",

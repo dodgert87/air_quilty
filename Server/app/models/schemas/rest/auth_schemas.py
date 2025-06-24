@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, SecretStr
 
 from app.models.DB_tables.user import RoleEnum
 
@@ -86,3 +86,13 @@ class SecretInfo(BaseModel):
     is_active: bool
     created_at: datetime
     expires_at: Optional[datetime] = None
+
+class APIKeyConfig(BaseModel):
+    key: SecretStr  # primary key
+    user_id: UUID
+    expires_at: datetime | None = None
+    role: RoleEnum
+
+class GeneratedAPIKey(BaseModel):
+    raw_key: str
+    hashed_key: SecretStr
