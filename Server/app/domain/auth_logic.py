@@ -5,24 +5,43 @@ import re
 
 from pydantic import SecretStr
 
+# --- Import internal modules ---
 from app.utils.crypto_utils import decrypt_secret, encrypt_secret
-from app.infrastructure.database.repository.restAPI import secret_repository
-from app.infrastructure.database.repository.restAPI import user_repository
-from app.utils.validators import validate_password_complexity
-from app.models.DB_tables.user_secrets import UserSecret
-from app.models.DB_tables.user import User
-from app.infrastructure.database.repository.restAPI import api_key_repository
-from app.utils.jwt_utils import decode_jwt, decode_jwt_unverified, generate_jwt
-from app.models.schemas.rest.auth_schemas import GeneratedAPIKey, LoginResponse, NewUserInput, OnboardResult, SecretCreateRequest, SecretCreateResponse, SecretInfo
-from app.utils.secret_utils import generate_api_key, generate_secret, get_api_key_expiry, get_secret_expiry
 from app.utils.hashing import hash_value, verify_value
+from app.utils.jwt_utils import decode_jwt, decode_jwt_unverified, generate_jwt
+from app.utils.secret_utils import generate_api_key, generate_secret, get_api_key_expiry, get_secret_expiry
 from app.utils.config import settings
-from app.infrastructure.database.repository.restAPI.user_repository import get_user_by_email, create_user, get_user_by_id, update_last_login
-from app.infrastructure.database.repository.restAPI.secret_repository import create_user_secret, delete_user_secret_by_label, get_all_active_user_secrets, get_user_secret_labels, get_user_secrets_info, set_user_secret_active_status
+from app.utils.validators import validate_password_complexity
+from app.utils.exceptions_base import (
+    AppException, AuthValidationError, UserNotFoundError, AuthConflictError
+)
+
+from app.models.DB_tables.user import User
+from app.models.DB_tables.user_secrets import UserSecret
+from app.models.schemas.rest.auth_schemas import (
+    GeneratedAPIKey, LoginResponse, NewUserInput, OnboardResult,
+    SecretCreateRequest, SecretCreateResponse, SecretInfo
+)
+
 from app.infrastructure.database.transaction import run_in_transaction
-from app.utils.exceptions_base import AppException, AuthValidationError, UserNotFoundError, AuthConflictError
+from app.infrastructure.database.repository.restAPI import (
+    user_repository, secret_repository, api_key_repository
+)
+from app.infrastructure.database.repository.restAPI.user_repository import (
+    get_user_by_email, create_user, get_user_by_id, update_last_login
+)
+from app.infrastructure.database.repository.restAPI.secret_repository import (
+    create_user_secret, delete_user_secret_by_label, get_all_active_user_secrets,
+    get_user_secret_by_label, get_user_secret_labels, get_user_secrets_info,
+    set_user_secret_active_status
+)
 
 
+# -------------------------------
+# USER ONBOARDING
+# -------------------------------
+
+# Onboards a list of new users, skipping existing ones
 async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
     created_users: List[str] = []
     skipped_users: List[str] = []
@@ -52,7 +71,7 @@ async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
                 db,
                 user_id=new_user.id,
                 secret=encrypt_secret(generate_secret()),
-                label="temp",
+                label="login",
                 is_active=True,
                 expires_at=get_secret_expiry()
             )
@@ -66,6 +85,11 @@ async def onboard_users_from_inputs(users: List[NewUserInput]) -> OnboardResult:
     )
 
 
+# -------------------------------
+# AUTHENTICATION & LOGIN
+# -------------------------------
+
+# Changes the user's password after validating the old one
 async def change_user_password(user: User, old_password: str, new_password: str, label: str | None = None):
     if not verify_value(old_password, user.hashed_password):
         raise AuthValidationError("Old password is incorrect")
@@ -84,34 +108,35 @@ async def change_user_password(user: User, old_password: str, new_password: str,
             session,
             user_id=user.id,
             secret=encrypt_secret(generate_secret()),
-            label=label or "reset",
+            label="login",
             is_active=True,
             expires_at=get_secret_expiry()
         )
 
 
+# Logs in a user and returns a JWT token signed using their login secret
 async def login_user(email: str, password: str) -> LoginResponse:
     async with run_in_transaction() as db:
         user = await get_user_by_email(db, email)
         if not user or not verify_value(password, user.hashed_password):
             raise AuthValidationError("Invalid email or password")
 
-        _, active_secret = await get_user_and_active_secret(user.id)
+        login_secret = await get_user_secret_by_label(db, user.id, label="login")
+        if not login_secret or not login_secret.is_active:
+            raise AuthValidationError("Login secret not found or inactive")
 
         await update_last_login(db, user.id)
 
         token, expires_in = generate_jwt(
             user_id=str(user.id),
             role=user.role,
-            secret=decrypt_secret(active_secret.secret)
+            secret=decrypt_secret(login_secret.secret)
         )
 
-        return LoginResponse(
-            access_token=token,
-            expires_in=expires_in
-        )
+        return LoginResponse(access_token=token, expires_in=expires_in)
 
 
+# Validates JWT and returns the associated user
 async def validate_token_and_get_user(token: str) -> User:
     async with run_in_transaction() as db:
         unverified = decode_jwt_unverified(token)
@@ -119,26 +144,27 @@ async def validate_token_and_get_user(token: str) -> User:
         if not user_id:
             raise AuthValidationError("Token missing 'sub' claim")
 
-        secrets = await get_all_active_user_secrets(db, user_id)
-        if not secrets:
-            raise AuthValidationError("No active secrets")
+        login_secret = await get_user_secret_by_label(db, UUID(user_id), label="login")
+        if not login_secret or not login_secret.is_active:
+            raise AuthValidationError("Login secret not found or inactive")
 
-        for s in secrets:
-            try:
-                decode_jwt(token, decrypt_secret(s.secret))
-                break
-            except Exception:
-                continue
-        else:
+        try:
+            decode_jwt(token, secret=decrypt_secret(login_secret.secret))
+        except Exception:
             raise AuthValidationError("Invalid or expired token")
 
-        user = await get_user_by_id(db, user_id)
+        user = await get_user_by_id(db, UUID(user_id))
         if not user:
             raise UserNotFoundError("User for valid token")
 
         return user
 
 
+# -------------------------------
+# API KEY MANAGEMENT
+# -------------------------------
+
+# Generates a new API key for a user
 async def generate_api_key_for_user(user_id: UUID, label: str) -> GeneratedAPIKey:
     async with run_in_transaction() as session:
         keys = await api_key_repository.get_api_keys_by_user(session, user_id)
@@ -157,16 +183,13 @@ async def generate_api_key_for_user(user_id: UUID, label: str) -> GeneratedAPIKe
                 raise AuthConflictError("Generated API key matches existing one — try again")
 
         await api_key_repository.create_api_key(
-            session,
-            user_id,
-            hashed_key,
-            label=label,
-            expires_at=get_api_key_expiry()
+            session, user_id, hashed_key, label, expires_at=get_api_key_expiry()
         )
 
-    return  GeneratedAPIKey(raw_key=raw_key, hashed_key=SecretStr(hashed_key))
+    return GeneratedAPIKey(raw_key=raw_key, hashed_key=SecretStr(hashed_key))
 
 
+# Validates an API key and returns the associated user
 async def validate_api_key(api_key: str) -> User:
     async with run_in_transaction() as session:
         all_keys = await api_key_repository.get_all_active_keys(session)
@@ -181,12 +204,18 @@ async def validate_api_key(api_key: str) -> User:
         raise AuthValidationError("Invalid or inactive API key")
 
 
+# Deletes a specific API key for a user by label
 async def delete_api_key_for_user(user_id: UUID, label: str) -> str:
     async with run_in_transaction() as session:
         deleted_key = await api_key_repository.delete_api_key_by_label(session, user_id, label)
         if not deleted_key:
             raise UserNotFoundError(f"API key with label '{label}' not found")
         return deleted_key
+
+
+# -------------------------------
+# USER UTILITIES
+# -------------------------------
 
 def parse_full_name(name: str) -> tuple[str, str]:
     parts = re.split(r"\s+", name.strip())
@@ -208,6 +237,11 @@ async def get_user_and_active_secret(user_id: UUID) -> tuple[User, UserSecret]:
         return user, secrets[0]
 
 
+# -------------------------------
+# ADMIN / MAINTENANCE UTILITIES
+# -------------------------------
+
+# Gets user profile and lists secrets & API keys
 async def get_user_profile_data(user_id: UUID) -> dict:
     async with run_in_transaction() as session:
         user = await user_repository.get_user_by_id(session, user_id)
@@ -233,7 +267,8 @@ async def get_user_profile_data(user_id: UUID) -> dict:
         }
 
 
-async def find_user(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
+# Attempts to find user by ID, email, or parsed name
+async def find_user_info(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
     async with run_in_transaction() as session:
         if user_id:
             return await user_repository.get_user_by_id(session, user_id)
@@ -246,9 +281,10 @@ async def find_user(user_id: Optional[UUID], email: Optional[str], name: Optiona
         return None
 
 
+# Deletes user and all associated data
 async def delete_user_by_identifier(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> str:
     async with run_in_transaction() as session:
-        user = await find_user(user_id, email, name)
+        user = await find_user_info(user_id, email, name)
         if not user:
             raise UserNotFoundError("User not found with the provided identifier")
 
@@ -259,21 +295,24 @@ async def delete_user_by_identifier(user_id: Optional[UUID], email: Optional[str
         return user.email
 
 
+# Gets all registered users
 async def get_all_users() -> List[User]:
     async with run_in_transaction() as session:
         return list(await user_repository.get_all_users(session))
 
 
-async def find_user_info(user_id: Optional[UUID], email: Optional[str], name: Optional[str]) -> Optional[User]:
-    async with run_in_transaction() as session:
-        return await find_user(user_id, email, name)
+# -------------------------------
+# SECRET MANAGEMENT
+# -------------------------------
 
-
+# Fetches metadata about user secrets
 async def get_secret_info_for_user(user_id: UUID, is_active: Optional[bool] = None) -> list[SecretInfo]:
     async with run_in_transaction() as session:
         secrets = await get_user_secrets_info(session, user_id, is_active=is_active)
         return [SecretInfo(**s) for s in secrets]
 
+
+# Creates a new user secret
 async def create_secret_for_user(user_id: UUID, payload: SecretCreateRequest) -> SecretCreateResponse:
     secret_plain = generate_secret()
     secret_encrypt = encrypt_secret(secret_plain)
@@ -288,11 +327,10 @@ async def create_secret_for_user(user_id: UUID, payload: SecretCreateRequest) ->
             expires_at=payload.expires_at or datetime.now(timezone.utc).replace(year=datetime.now().year + 1)
         )
 
-    return SecretCreateResponse(
-        label=new_secret.label,
-        secret=secret_plain
-    )
+    return SecretCreateResponse(label=new_secret.label, secret=secret_plain)
 
+
+# Deletes a user's secret by label
 async def delete_secret_by_label(user_id: UUID, label: str) -> str:
     async with run_in_transaction() as session:
         deleted = await delete_user_secret_by_label(session, user_id, label)
@@ -300,6 +338,8 @@ async def delete_secret_by_label(user_id: UUID, label: str) -> str:
             raise AuthValidationError(f"Secret with label '{label}' not found.")
     return label
 
+
+# Sets the active status of a user's secret
 async def set_secret_active_status(user_id: UUID, label: str, is_active: bool) -> str:
     async with run_in_transaction() as session:
         updated = await set_user_secret_active_status(session, user_id, label, is_active)
