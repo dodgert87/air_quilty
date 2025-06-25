@@ -60,9 +60,8 @@ class SensorDataIn(BaseModel):
 class SensorDataOut(SensorDataIn):
     id: UUID
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True,)
+
 
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 
 class DateRange(BaseModel):
@@ -21,6 +21,6 @@ class SensorMetadataQuery(BaseModel):
     page: int = Field(default=1, alias="page")
     page_size: Optional[int] = Field(default=None, alias="page_size")
 
-    class Config:
-        populate_by_name = True
+
+    model_config = ConfigDict(populate_by_name=True)
 

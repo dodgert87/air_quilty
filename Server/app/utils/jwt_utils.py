@@ -3,6 +3,7 @@ from typing import cast, Any, Dict
 
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError, DecodeError
+from jwt import InvalidSignatureError
 
 from app.utils.config import settings
 
@@ -30,13 +31,12 @@ def generate_jwt(user_id: str, role: str, secret: str) -> tuple[str, int]:
 
 
 def decode_jwt(token: str, secret: str) -> Dict[str, Any]:
-    """
-    Fully verify and decode a JWT using the secret.
-    """
     try:
         return jwt.decode(token, secret, algorithms=[settings.JWT_ALGORITHM])
     except ExpiredSignatureError:
         raise ValueError("Token has expired")
+    except InvalidSignatureError:
+        raise ValueError("Token validation failed")
     except DecodeError:
         raise ValueError("Invalid token")
     except InvalidTokenError:

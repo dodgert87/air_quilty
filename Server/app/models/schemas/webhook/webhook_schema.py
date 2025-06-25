@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, AnyHttpUrl, Field, SecretStr, TypeAdapter
+from pydantic import BaseModel, AnyHttpUrl, ConfigDict, Field, SecretStr, TypeAdapter
 from uuid import UUID
 from typing import Optional
 
@@ -43,9 +43,8 @@ class WebhookRead(BaseModel):
     last_triggered_at: Optional[datetime]
     parameters: Optional[dict[str, tuple[Optional[float], Optional[float]]]] = None
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
+
 
 class WebhookDeletePayload(BaseModel):
     webhook_id: UUID
