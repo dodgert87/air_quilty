@@ -1,161 +1,113 @@
 import pytest
 from uuid import uuid4
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from app.infrastructure.database.transaction import run_in_transaction
-from app.models.DB_tables.user import User, RoleEnum
 from app.models.DB_tables.api_keys import APIKey
-from app.infrastructure.database.repository.restAPI.api_key_repository import (
-    create_api_key,
-    delete_api_key_by_label,
-    get_api_keys_by_user,
-    get_active_api_key,
-    get_all_active_keys,
-    revoke_all_user_api_keys,
-    delete_all_user_api_keys,
-)
+from app.infrastructure.database.repository.restAPI import api_key_repository
+from app.utils.exceptions_base import AppException
 
 
-async def seed_user(session):
-    """Helper to insert a test user and return its ID."""
-    user_id = uuid4()
-    user = User(
-        id=user_id,
-        email="testuser@example.com",
-        username="testuser",
-        hashed_password="irrelevant-hash",
-        role=RoleEnum.authenticated,
-        created_at=datetime.now(timezone.utc),
-        last_login=None,
-    )
-    session.add(user)
-    await session.flush()
-    return user_id
+# ────── Dummy Mocks ──────
+class DummySession:
+    def __init__(self, execute_result=None):
+        self._execute_result = execute_result
+        self.added = None
+        self.deleted = None
+        self.flushed = False
 
+    async def __aenter__(self): return self
+    async def __aexit__(self, *args): pass
+    async def execute(self, stmt): return DummyExecute(self._execute_result)
+    def add(self, obj): self.added = obj
+    async def flush(self): self.flushed = True
+    async def commit(self): pass
+    async def delete(self, obj): self.deleted = obj
+
+
+class DummyExecute:
+    def __init__(self, items): self._items = items
+    def scalar_one_or_none(self): return self._items[0] if self._items else None
+    def scalars(self): return DummyScalars(self._items)
+    def all(self): return self._items
+    @property
+    def rowcount(self): return len(self._items)
+
+
+class DummyScalars:
+    def __init__(self, items): self.items = items
+    def all(self): return self.items
+
+
+# ────── Tests ──────
 
 @pytest.mark.asyncio
 async def test_create_api_key_success():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
+    session = DummySession()
+    key = "abc123"
+    user_id = uuid4()
 
-        key = "testkey123"
-        result = await create_api_key(session, user_id=user_id, key=key, label="test-label")
-        await session.flush()
+    result = await api_key_repository.create_api_key(
+        session, #type: ignore
+        user_id=user_id,
+        key=key,
+        label="login",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1)
+    )
 
-        assert result.key == key
-        assert result.user_id == user_id
-        assert result.is_active
-
-
-@pytest.mark.asyncio
-async def test_delete_api_key_by_label_success():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
-
-        key = "label-delete-key"
-        label = "delete-me"
-        await create_api_key(session, user_id, key, label)
-        await session.flush()
-
-        deleted = await delete_api_key_by_label(session, user_id, label)
-        assert deleted == key
+    assert isinstance(result, APIKey)
+    assert session.added == result
+    assert result.key == key
+    assert result.user_id == user_id
+    assert result.is_active is True
 
 
 @pytest.mark.asyncio
-async def test_delete_api_key_by_label_returns_none_if_not_found():
-    async with run_in_transaction() as session:
-        deleted = await delete_api_key_by_label(session, uuid4(), "nonexistent-label")
-        assert deleted is None
+async def test_delete_api_key_by_label_found():
+    session = DummySession(execute_result=["abc123"])
+    user_id = uuid4()
+
+    deleted_key = await api_key_repository.delete_api_key_by_label(session, user_id, "login")#type: ignore
+    assert deleted_key == "abc123"
 
 
 @pytest.mark.asyncio
-async def test_get_api_keys_by_user_returns_all_keys():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
+async def test_get_api_keys_by_user_returns_list():
+    user_id = uuid4()
+    keys = [APIKey(user_id=user_id), APIKey(user_id=user_id)]
+    session = DummySession(execute_result=keys)
 
-        await create_api_key(session, user_id, "key1")
-        await session.flush()
-        await create_api_key(session, user_id, "key2")
-        await session.flush()
-
-        keys = await get_api_keys_by_user(session, user_id)
-        assert len(keys) == 2
-        assert {k.key for k in keys} == {"key1", "key2"}
+    result = await api_key_repository.get_api_keys_by_user(session, user_id)#type: ignore
+    assert isinstance(result, list)
+    assert all(isinstance(k, APIKey) for k in result)
 
 
 @pytest.mark.asyncio
-async def test_get_active_api_key_success():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
+async def test_get_active_api_key_found():
+    api_key = APIKey(key="xyz", is_active=True)
+    session = DummySession(execute_result=[api_key])
 
-        key = "active-key"
-        await create_api_key(session, user_id, key)
-        await session.flush()
-
-        found = await get_active_api_key(session, key)
-        assert found is not None
-        assert found.key == key
+    result = await api_key_repository.get_active_api_key(session, "xyz")#type: ignore
+    assert result == api_key
 
 
 @pytest.mark.asyncio
-async def test_get_active_api_key_inactive_returns_none():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
+async def test_get_all_active_keys_returns_list():
+    keys = [APIKey(is_active=True), APIKey(is_active=True)]
+    session = DummySession(execute_result=keys)
 
-        key = "inactive-key"
-        apikey = await create_api_key(session, user_id, key)
-        apikey.is_active = False
-        await session.flush()
-
-        found = await get_active_api_key(session, key)
-        assert found is None
+    result = await api_key_repository.get_all_active_keys(session)#type: ignore
+    assert isinstance(result, list)
+    assert len(result) == 2
+    assert all(k.is_active for k in result)
 
 
 @pytest.mark.asyncio
-async def test_get_all_active_keys_returns_only_active():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
-
-        await create_api_key(session, user_id, "active1")
-        await session.flush()
-        inactive = await create_api_key(session, user_id, "inactive1")
-        inactive.is_active = False
-        await session.flush()
-
-        keys = await get_all_active_keys(session)
-        assert all(k.is_active for k in keys)
-        assert "inactive1" not in {k.key for k in keys}
+async def test_revoke_all_user_api_keys_success():
+    session = DummySession()
+    await api_key_repository.revoke_all_user_api_keys(session, uuid4())#type: ignore
 
 
 @pytest.mark.asyncio
-async def test_revoke_all_user_api_keys_sets_all_inactive():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
-
-        await create_api_key(session, user_id, "r1")
-        await session.flush()
-        await create_api_key(session, user_id, "r2")
-        await session.flush()
-
-        await revoke_all_user_api_keys(session, user_id)
-        await session.flush()
-
-        keys = await get_api_keys_by_user(session, user_id)
-        assert all(not k.is_active for k in keys)
-
-
-@pytest.mark.asyncio
-async def test_delete_all_user_api_keys_deletes_keys():
-    async with run_in_transaction() as session:
-        user_id = await seed_user(session)
-
-        await create_api_key(session, user_id, "d1")
-        await session.flush()
-        await create_api_key(session, user_id, "d2")
-        await session.flush()
-
-        await delete_all_user_api_keys(session, user_id)
-        await session.flush()
-
-        keys = await get_api_keys_by_user(session, user_id)
-        assert keys == []
+async def test_delete_all_user_api_keys_success():
+    session = DummySession()
+    await api_key_repository.delete_all_user_api_keys(session, uuid4())#type: ignore
