@@ -49,14 +49,16 @@ class APIKeyAuthProcessor:
     @classmethod
     def remove(cls, key_value: str) -> None:
         before = len(cls._api_keys)
-        cls._api_keys = [k for k in cls._api_keys if k.key.get_secret_value() != key_value]
+        cls._api_keys = [
+            k for k in cls._api_keys if not verify_value(key_value, k.key.get_secret_value())
+        ]
         after = len(cls._api_keys)
         logger.info("[API_KEY] Removed key | count_removed=%d", before - after)
 
     @classmethod
     def replace(cls, config: APIKeyConfig) -> None:
         logger.info("[API_KEY] Replacing key | user_id=%s", config.user_id)
-        cls.remove(config.key.get_secret_value())
+        cls.invalidate_user(config.user_id)  # remove all keys for the user
         cls.add(config)
 
     @classmethod
