@@ -68,21 +68,31 @@ class UserNotFoundError(AppException):
             public_message="User not found.",
             domain="auth"
         )
-
 class AuthValidationError(AppException):
-    def __init__(self, public_message: str = "Invalid credentials", context: str = ""):
+    """Raised for authentication / validation problems (HTTP-400)."""
+
+    def __init__(self, message: str):
         super().__init__(
-            message=f"Auth validation error: {context}",
-            status_code=401,
-            public_message=public_message,
-            domain="auth"
+            message=message,
+            status_code=400,
+            public_message=message,
+            domain="auth",
         )
+
+    def __str__(self) -> str:      # noqa: DunderStr
+        return f"Auth validation error: {self.message}" if self.message else "Auth validation error"
+
 
 class AuthConflictError(AppException):
-    def __init__(self, public_message: str = "Resource conflict", context: str = ""):
+    """Raised for auth conflicts (e.g. duplicate labels, key limit reached)."""
+
+    def __init__(self, message: str):
         super().__init__(
-            message=f"Auth conflict: {context}",
+            message=message,
             status_code=409,
-            public_message=public_message,
-            domain="auth"
+            public_message=message,
+            domain="auth",
         )
+
+    def __str__(self) -> str:
+        return self.message or "Auth conflict"
