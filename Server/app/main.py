@@ -3,8 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware import Middleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
 from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
+
 
 from app.domain.api_key_processor import APIKeyAuthProcessor
 from app.exception_handlers import app_exception_handler, fallback_exception_handler, validation_error_handler
@@ -13,6 +16,7 @@ from app.utils.exceptions_base import AppException
 from app.middleware.login_auth_middleware import LoginAuthMiddleware
 from app.middleware.api_key_auth_middleware import APIKeyAuthMiddleware
 from app.middleware.rate_limit_middleware import limiter, rate_limit_exceeded_handler
+from app.middleware.enforce_https_middleware import EnforceHTTPSMiddleware
 
 from app.utils.config import settings
 from app.infrastructure.database.init_db import init_db
@@ -44,6 +48,9 @@ async def lifespan(app: FastAPI):
 
 # ─── Middleware List ─────────────────────────────────────────
 middleware = [
+    Middleware(ProxyHeadersMiddleware,  # type: ignore[arg-type]
+               trusted_hosts=["tamkairquality.duckdns.org"]),
+    Middleware(EnforceHTTPSMiddleware),
     Middleware(LoginAuthMiddleware),
     Middleware(APIKeyAuthMiddleware),
 ]
