@@ -8,10 +8,13 @@ from loguru import logger
 
 def get_user_or_ip_key(request: Request) -> str:
     """
-    Extract the rate-limiting key for a given request.
-    - Use user_id if present (from auth middlewares).
-    - Fallback to client IP.
-    - Fallback to 'unknown' if client info is missing.
+    Extracts a key used for rate limiting.
+    Priority:
+    1. Authenticated user's ID (if available via middleware).
+    2. Client IP address.
+    3. Fallback to 'unknown' if neither is present.
+
+    This allows per-user limits when logged in, and IP-based limits otherwise.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
     if user_id:
@@ -24,16 +27,29 @@ def get_user_or_ip_key(request: Request) -> str:
     return "unknown"
 
 
-# ─── Create Limiter ──────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Create the rate limiter instance with a custom key extractor.
+# This limiter can be used via decorators like @limiter.limit()
+# or in route configuration with dependency injection.
+# ─────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_user_or_ip_key)
 
 
-# ─── Custom 429 Error Handler ────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Custom exception handler for RateLimitExceeded exceptions.
+# Returns a 429 Too Many Requests response with:
+# - Retry-After header (defaults to 60 seconds if unknown)
+# - JSON error body with key info and retry time
+# ─────────────────────────────────────────────────────────────
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """
-    Return a 429 response with Retry-After header and structured error.
+    Custom 429 error handler for rate limit violations.
+
+    Includes Retry-After header and structured JSON response.
+    Logs the offending key and retry duration.
     """
     try:
+        # Get retry time from headers if present
         retry_after = int(getattr(exc, "headers", {}).get("Retry-After", 60))
     except Exception:
         retry_after = 60

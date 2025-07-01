@@ -1,3 +1,12 @@
+# SENSOR DATA ADVANCED QUERY SCHEMA
+# This model defines a unified input structure for advanced filtering of sensor data via graphQL.
+# It supports filtering by:
+# - sensor IDs
+# - timestamps (exact list or range)
+# - numeric field values (via [min, max])
+# - sensor metadata (location, model, is_active)
+# Pagination is supported via `page` and `page_size`.
+
 from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
 from typing import Optional, List, Dict
@@ -5,25 +14,58 @@ from datetime import datetime
 
 
 class SensorDataAdvancedQuery(BaseModel):
-    # Sensor filters
-    sensor_ids: Optional[List[UUID]] = None
+    # Sensor filtering
+    sensor_ids: Optional[List[UUID]] = Field(
+        default=None,
+        description="List of sensor UUIDs to include in the query"
+    )
 
-    # Timestamp filters
-    timestamps: Optional[List[datetime]] = None
-    timestamp_range_start: Optional[datetime] = None
-    timestamp_range_end: Optional[datetime] = None
+    # Timestamp filtering
+    timestamps: Optional[List[datetime]] = Field(
+        default=None,
+        description="List of exact timestamps to match"
+    )
+    timestamp_range_start: Optional[datetime] = Field(
+        default=None,
+        description="Start of the timestamp range (inclusive)"
+    )
+    timestamp_range_end: Optional[datetime] = Field(
+        default=None,
+        description="End of the timestamp range (inclusive)"
+    )
 
     # Field-based numeric filtering
-    field_ranges: Optional[Dict[str, List[Optional[float]]]] = None  # {"pm2_5": [None, 50]}
+    field_ranges: Optional[Dict[str, List[Optional[float]]]] = Field(
+        default=None,
+        description="Dictionary mapping field names to [min, max] filters. Use null for open-ended bounds."
+    )
 
-    # Metadata filters
-    locations: Optional[List[str]] = None
-    models: Optional[List[str]] = None
-    is_active: Optional[bool] = None
+    # Sensor metadata filtering
+    locations: Optional[List[str]] = Field(
+        default=None,
+        description="List of location tags to filter sensors by"
+    )
+    models: Optional[List[str]] = Field(
+        default=None,
+        description="List of sensor model names to include"
+    )
+    is_active: Optional[bool] = Field(
+        default=None,
+        description="Whether the sensor must be active"
+    )
 
     # Pagination
-    page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=50, ge=1, le=200)
+    page: int = Field(
+        default=1,
+        ge=1,
+        description="Page number for pagination (starts from 1)"
+    )
+    page_size: int = Field(
+        default=50,
+        ge=1,
+        le=200,
+        description="Number of results per page (max 200)"
+    )
 
     @field_validator("field_ranges")
     def validate_field_ranges(cls, v):

@@ -19,6 +19,9 @@ from app.utils.config import settings
 
 
 class MQTTListenerState:
+    """
+    Tracks internal metrics of the MQTT listener.
+    """
     is_running: bool = False
     last_message_at: datetime | None = None
     last_device_id: UUID | None = None
@@ -29,6 +32,12 @@ mqtt_state = MQTTListenerState()
 
 
 async def process_status_message(topic: str, text: str):
+    """
+    Process a sensor's connection status message.
+
+    Expected topic format: A3/AirQuality/Connection/<sensor_id>
+    Payload is expected to be either "online" or "offline".
+    """
     sensor_id_str = topic.split("/")[-1]
     try:
         sensor_id = UUID(sensor_id_str)
@@ -39,7 +48,7 @@ async def process_status_message(topic: str, text: str):
     is_active = text.strip().lower() == "online"
 
     if not await ensure_sensor_exists(sensor_id, is_active=is_active):
-        update_data = SensorUpdate(is_active=is_active)
+        update_data = SensorUpdate(is_active=is_active)  # type: ignore
         sensor = await modify_sensor(sensor_id, update_data)
         if sensor:
             sensor_out = SensorOut.model_validate(sensor)
@@ -48,6 +57,14 @@ async def process_status_message(topic: str, text: str):
 
 
 async def process_sensor_data(text: str):
+    """
+    Process and store sensor data received from MQTT.
+
+    If sensor does not exist, creates a placeholder.
+    Dispatches webhook events for:
+    - SENSOR_DATA_RECEIVED
+    - ALERT_TRIGGERED
+    """
     payload_dict = json.loads(text)
     logger.debug(f"MQTT payload parsed: {payload_dict}")
     data = SensorDataIn(**payload_dict)
@@ -71,13 +88,21 @@ async def process_sensor_data(text: str):
 
     logger.info("[MQTT] Dispatched SENSOR_DATA_RECEIVED and ALERT_TRIGGERED | sensor_id=%s", data.device_id)
 
+    # Update local state
     mqtt_state.is_running = True
     mqtt_state.last_message_at = datetime.now(timezone.utc)
     mqtt_state.last_device_id = data.device_id
     mqtt_state.message_count += 1
 
 
+
 async def ensure_sensor_exists(sensor_id: UUID, is_active: bool | None = None) -> bool:
+    """
+    Check if a sensor exists in DB, and if its active status matches expectation.
+
+    Returns:
+        bool: True if sensor is valid and no action needed.
+    """
     sensor = await safe_get_sensor_by_id(sensor_id)
 
     if not sensor:
@@ -91,7 +116,15 @@ async def ensure_sensor_exists(sensor_id: UUID, is_active: bool | None = None) -
     return True
 
 
+
 async def handle_mqtt_message(topic: str, payload: bytes | str | memoryview):
+    """
+    Decode and dispatch the MQTT message based on topic.
+
+    Supports both:
+    - Status messages (`A3/AirQuality/Connection/...`)
+    - Sensor data messages (default)
+    """
     if isinstance(payload, (bytes, bytearray)):
         text = payload.decode()
     elif isinstance(payload, memoryview):
@@ -104,13 +137,22 @@ async def handle_mqtt_message(topic: str, payload: bytes | str | memoryview):
 
     logger.info("[MQTT] Message received | topic=%s", topic)
 
-    if topic.startswith("A3/AirQuality/Connection/"):
+    if topic.startswith(settings.MQTT_SENSOR_STATUS_TOPICSt_START_WITH):
         await process_status_message(topic, text)
     else:
         await process_sensor_data(text)
 
 
+
 async def listen_to_mqtt() -> None:
+    """
+    Long-running async loop that listens to MQTT messages and dispatches handlers.
+
+    Features:
+    - Auto reconnect
+    - Topic subscription
+    - Error-resilient loop with retry
+    """
     logger.info("Starting MQTT listener with auto-reconnect…")
 
     while True:
@@ -130,7 +172,7 @@ async def listen_to_mqtt() -> None:
 
                 async for message in client.messages:
                     try:
-                        await handle_mqtt_message(message.topic.value, message.payload) # type: ignore
+                        await handle_mqtt_message(message.topic.value, message.payload)  # type: ignore
                     except (ValidationError, json.JSONDecodeError) as ve:
                         logger.warning(f"MQTT data validation error: {ve}")
                     except Exception as ex:

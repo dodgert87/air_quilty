@@ -13,12 +13,28 @@ from app.utils.exceptions_base import AppException
 # Create a new user secret
 async def create_user_secret(
     db: AsyncSession,
-    user_id,
+    user_id: UUID,
     secret: str,
     label: str,
     is_active: bool,
     expires_at: datetime,
 ) -> UserSecret:
+    """
+    Create a new secret for a given user.
+
+    Args:
+        user_id: UUID of the user.
+        secret: Secret string (pre-generated).
+        label: Unique identifier for this secret.
+        is_active: Whether the secret is active.
+        expires_at: When the secret should expire.
+
+    Returns:
+        UserSecret: The created secret row.
+
+    Raises:
+        AppException: On DB failure.
+    """
     try:
         new_secret = UserSecret(
             id=uuid4(),
@@ -30,7 +46,6 @@ async def create_user_secret(
             expires_at=expires_at,
             revoked_at=None
         )
-
         db.add(new_secret)
         await db.flush()
         return new_secret
@@ -42,10 +57,11 @@ async def create_user_secret(
             domain="auth"
         )
 
+
 # ----------------------------- READ (GET) -------------------------------------
 
-# Get user secret by ID
 async def get_user_secret_by_id(session: AsyncSession, secret_id: UUID) -> UserSecret | None:
+    """Get an active secret by its UUID."""
     try:
         result = await session.execute(
             select(UserSecret).where(UserSecret.id == secret_id, UserSecret.is_active.is_(True))
@@ -59,8 +75,9 @@ async def get_user_secret_by_id(session: AsyncSession, secret_id: UUID) -> UserS
             domain="auth"
         )
 
-# Get all active user secrets
+
 async def get_all_active_user_secrets(db: AsyncSession, user_id: UUID) -> Sequence[UserSecret]:
+    """Return all active secrets for a user."""
     try:
         result = await db.execute(
             select(UserSecret).where(
@@ -77,8 +94,9 @@ async def get_all_active_user_secrets(db: AsyncSession, user_id: UUID) -> Sequen
             domain="auth"
         )
 
-# Get all secrets (active and inactive) for a user
+
 async def get_user_secrets(session: AsyncSession, user_id: UUID) -> list[UserSecret]:
+    """Get all (active/inactive) secrets for a user."""
     try:
         result = await session.execute(
             select(UserSecret).where(UserSecret.user_id == user_id)
@@ -92,12 +110,9 @@ async def get_user_secrets(session: AsyncSession, user_id: UUID) -> list[UserSec
             domain="auth"
         )
 
-# Get secret by label
-async def get_user_secret_by_label(
-    session: AsyncSession,
-    user_id: UUID,
-    label: str
-) -> UserSecret | None:
+
+async def get_user_secret_by_label(session: AsyncSession, user_id: UUID, label: str) -> UserSecret | None:
+    """Get a secret by its label for a specific user."""
     try:
         result = await session.execute(
             select(UserSecret).where(
@@ -114,18 +129,13 @@ async def get_user_secret_by_label(
             domain="auth"
         )
 
-# Get labels of user's secrets, optionally filtering by active status
-async def get_user_secret_labels(
-    session: AsyncSession,
-    user_id: UUID,
-    is_active: Optional[bool] = None
-) -> list[str]:
+
+async def get_user_secret_labels(session: AsyncSession, user_id: UUID, is_active: Optional[bool] = None) -> list[str]:
+    """Return list of labels for a user's secrets, optionally filtered by status."""
     try:
         stmt = select(UserSecret.label).where(UserSecret.user_id == user_id)
-
         if isinstance(is_active, bool):
             stmt = stmt.where(UserSecret.is_active.is_(is_active))
-
         result = await session.execute(stmt)
         return [row[0] for row in result.all()]
     except Exception as e:
@@ -136,12 +146,9 @@ async def get_user_secret_labels(
             domain="auth"
         )
 
-# Get secret metadata (label, status, timestamps), optionally filtered by active status
-async def get_user_secrets_info(
-    session: AsyncSession,
-    user_id: UUID,
-    is_active: Optional[bool] = None
-) -> list[dict]:
+
+async def get_user_secrets_info(session: AsyncSession, user_id: UUID, is_active: Optional[bool] = None) -> list[dict]:
+    """Return public info about a user's secrets (label, status, timestamps)."""
     try:
         stmt = select(
             UserSecret.label,
@@ -171,10 +178,11 @@ async def get_user_secrets_info(
             domain="auth"
         )
 
+
 # ----------------------------- UPDATE -------------------------------------
 
-# Revoke all active user secrets (soft deactivate)
 async def revoke_all_user_secrets(session: AsyncSession, user_id: UUID):
+    """Deactivate all active secrets for a given user (soft delete)."""
     try:
         await session.execute(
             update(UserSecret)
@@ -189,13 +197,9 @@ async def revoke_all_user_secrets(session: AsyncSession, user_id: UUID):
             domain="auth"
         )
 
-# Set specific secret's active status by label
-async def set_user_secret_active_status(
-    session: AsyncSession,
-    user_id: UUID,
-    label: str,
-    is_active: bool
-) -> bool:
+
+async def set_user_secret_active_status(session: AsyncSession, user_id: UUID, label: str, is_active: bool) -> bool:
+    """Toggle secret activation state for a specific label."""
     result = await session.execute(
         update(UserSecret)
         .where(
@@ -210,11 +214,15 @@ async def set_user_secret_active_status(
     )
     return result.rowcount > 0
 
-async def update_webhook_retry(
-    session: AsyncSession,
-    webhook_id: UUID,
-    last_error: str | None = None
-):
+
+async def update_webhook_retry(session: AsyncSession, webhook_id: UUID, last_error: str | None = None):
+    """
+    Update retry status and last trigger time for a webhook.
+
+    Args:
+        webhook_id: UUID of the webhook.
+        last_error: Optional string describing last failure (if any).
+    """
     try:
         stmt = (
             update(Webhook)
@@ -233,10 +241,11 @@ async def update_webhook_retry(
             public_message="Could not update webhook delivery status.",
             domain="webhook"
         )
+
 # ----------------------------- DELETE -------------------------------------
 
-# Delete all user secrets
 async def delete_user_secrets(session: AsyncSession, user_id: UUID) -> None:
+    """Delete all secrets for a user (hard delete)."""
     try:
         await session.execute(
             delete(UserSecret).where(UserSecret.user_id == user_id)
@@ -249,8 +258,9 @@ async def delete_user_secrets(session: AsyncSession, user_id: UUID) -> None:
             domain="auth"
         )
 
-# Delete user secret by label
+
 async def delete_user_secret_by_label(session: AsyncSession, user_id: UUID, label: str) -> bool:
+    """Delete a specific secret by its label."""
     result = await session.execute(
         delete(UserSecret).where(
             UserSecret.user_id == user_id,

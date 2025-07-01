@@ -17,7 +17,17 @@ router = APIRouter(prefix="/sensor/metadata", tags=["Sensor Metadata"])
 
 # ──────────────── Public/Query Endpoints ───────────── #
 
-@router.post("/find", response_model=SensorOut)
+@router.post(
+    "/find",
+    response_model=SensorOut,
+    tags=["Sensor Metadata"],
+    summary="Find a registered sensor by UUID",
+    description=f"""
+Fetch metadata for a registered sensor using its UUID.
+Authentication required via API Key.
+Rate limited: {settings.SENSOR_META_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_META_QUERY_RATE_LIMIT)
 async def get_sensor(request: Request, payload: SensorIdPayload):
     try:
@@ -30,7 +40,17 @@ async def get_sensor(request: Request, payload: SensorIdPayload):
 
 
 
-@router.get("/", response_model=list[SensorOut])
+@router.get(
+    "/",
+    response_model=list[SensorOut],
+    tags=["Sensor Metadata"],
+    summary="List all registered sensors",
+    description=f"""
+Returns all registered sensor metadata records.
+Authentication required via API Key.
+Rate limited: {settings.SENSOR_META_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_META_QUERY_RATE_LIMIT)
 async def list_all_sensors(request: Request):
     try:
@@ -43,7 +63,17 @@ async def list_all_sensors(request: Request):
 
 
 
-@router.get("/unregistered", response_model=list[SensorOut])
+@router.get(
+    "/unregistered",
+    response_model=list[SensorOut],
+    tags=["Sensor Metadata"],
+    summary="List placeholder/unregistered sensors",
+    description=f"""
+Returns metadata for sensors that have sent data but were never explicitly registered.
+Authentication required via API Key.
+Rate limited: {settings.SENSOR_META_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_META_QUERY_RATE_LIMIT)
 async def list_unregistered_sensors(request: Request):
     try:
@@ -55,9 +85,20 @@ async def list_unregistered_sensors(request: Request):
         raise AppException.from_internal_error("Failed to list unregistered sensors", domain="sensor")
 
 
+
 # ──────────────── Admin/Write Endpoints ───────────── #
 
-@router.put("/admin/update", response_model=SensorOut)
+@router.put(
+    "/admin/update",
+    response_model=SensorOut,
+    tags=["Sensor Metadata"],
+    summary="Update metadata for a registered sensor",
+    description=f"""
+Update a sensor's metadata fields such as location, model, or description.
+Admin access required.
+Rate limited: {settings.SENSOR_META_ADMIN_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_META_ADMIN_RATE_LIMIT)
 async def update_sensor_entry(request: Request, payload: SensorUpdatePayload):
     try:
@@ -69,7 +110,18 @@ async def update_sensor_entry(request: Request, payload: SensorUpdatePayload):
         raise AppException.from_internal_error("Failed to update sensor metadata", domain="sensor")
 
 
-@router.delete("/admin", status_code=204)
+
+@router.delete(
+    "/admin",
+    status_code=204,
+    tags=["Sensor Metadata"],
+    summary="Delete a registered sensor",
+    description=f"""
+Deletes a registered sensor and all associated metadata.
+Admin access required.
+Rate limited: {settings.SENSOR_META_ADMIN_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_META_ADMIN_RATE_LIMIT)
 async def delete_sensor_entry(request: Request, payload: SensorIdPayload):
     try:
@@ -83,7 +135,16 @@ async def delete_sensor_entry(request: Request, payload: SensorIdPayload):
 
 # ──────────────── System Monitoring ───────────────── #
 
-@router.get("/mqtt-status", summary="Get current status of MQTT listener")
+@router.get(
+    "/mqtt-status",
+    summary="Get current status of MQTT listener",
+    tags=["Sensor Metadata"],
+    description=f"""
+Returns internal status of the MQTT message listener system.
+Includes metrics such as last message time, last device, and message count.
+Rate limited: {settings.SENSOR_MQTT_MONITOR_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_MQTT_MONITOR_RATE_LIMIT)
 async def get_mqtt_listener_status(request: Request):
     try:
@@ -99,3 +160,4 @@ async def get_mqtt_listener_status(request: Request):
     except Exception as e:
         logger.exception("[SENSOR_META] Failed to retrieve MQTT status")
         raise AppException.from_internal_error("Failed to retrieve MQTT listener status", domain="sensor")
+

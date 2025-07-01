@@ -141,19 +141,19 @@ async def test_change_user_password_success(mock_user_repo, mock_api_repo, mock_
     mock_api_repo.revoke_all_user_api_keys = AsyncMock()
     mock_secret_repo.create_user_secret = AsyncMock()
 
-    await auth_logic.change_user_password(dummy_user, "old_password", "NewPass123!", "login")
+    await auth_logic.change_user_password(dummy_user, "old_password", "NewPass123!")
 
 
 @pytest.mark.asyncio
 async def test_change_user_password_wrong_old(dummy_user):
     with pytest.raises(AuthValidationError, match="Auth validation error"):
-        await auth_logic.change_user_password(dummy_user, "wrong_old", "NewPass123!", "login")
+        await auth_logic.change_user_password(dummy_user, "wrong_old", "NewPass123!")
 
 
 @pytest.mark.asyncio
 async def test_change_user_password_weak_new(dummy_user):
     with pytest.raises(AuthValidationError, match="Auth validation error"):
-        await auth_logic.change_user_password(dummy_user, "old_password", "123", "login")
+        await auth_logic.change_user_password(dummy_user, "old_password", "123")
 
 
 # ─────────────────────────────────────────────────────────────

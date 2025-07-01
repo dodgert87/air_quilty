@@ -8,6 +8,15 @@ from app.utils.exceptions_base import AppException
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+    """
+    Fetch a user by their email address.
+
+    Returns:
+        User | None: Matching user or None.
+
+    Raises:
+        AppException: On DB error.
+    """
     try:
         result = await session.execute(
             select(User).where(User.email == email)
@@ -22,6 +31,52 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
         )
 
 
+async def get_user_by_id(db: AsyncSession, user_id: UUID) -> User | None:
+    """
+    Fetch a user by UUID.
+
+    Returns:
+        User | None: The user or None.
+
+    Raises:
+        AppException: On DB error.
+    """
+    try:
+        result = await db.execute(
+            select(User).where(User.id == user_id)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise AppException(
+            message=f"Failed to fetch user by ID {user_id}: {e}",
+            status_code=500,
+            public_message="Could not fetch user by ID.",
+            domain="auth"
+        )
+
+
+async def get_all_users(session: AsyncSession) -> Sequence[User]:
+    """
+    List all registered users.
+
+    Returns:
+        Sequence[User]: All user records.
+
+    Raises:
+        AppException: On DB failure.
+    """
+    try:
+        result = await session.execute(select(User))
+        return result.scalars().all()
+    except Exception as e:
+        raise AppException(
+            message=f"Failed to list all users: {e}",
+            status_code=500,
+            public_message="Could not retrieve users.",
+            domain="auth"
+        )
+
+
 async def create_user(
     session: AsyncSession,
     email: str,
@@ -29,6 +84,21 @@ async def create_user(
     hashed_password: str,
     role: str = "authenticated",
 ) -> User:
+    """
+    Register a new user.
+
+    Args:
+        email: Unique email address.
+        username: User display name.
+        hashed_password: Secure password hash.
+        role: User role (default: 'authenticated').
+
+    Returns:
+        User: Created user object.
+
+    Raises:
+        AppException: On DB write failure.
+    """
     try:
         new_user = User(
             id=uuid4(),
@@ -52,11 +122,35 @@ async def create_user(
         )
 
 
-async def update_user_secret_ref(
-    db: AsyncSession,
-    user_id: UUID,
-    secret_id: UUID
-) -> None:
+async def update_last_login(session: AsyncSession, user_id: UUID):
+    """
+    Record the current time as the user's last login.
+
+    Raises:
+        AppException: On DB failure.
+    """
+    try:
+        await session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(last_login=datetime.now(timezone.utc))
+        )
+    except Exception as e:
+        raise AppException(
+            message=f"Failed to update last login for user {user_id}: {e}",
+            status_code=500,
+            public_message="Could not update last login.",
+            domain="auth"
+        )
+
+
+async def update_user_secret_ref(db: AsyncSession, user_id: UUID, secret_id: UUID) -> None:
+    """
+    Update a user's currently active secret ID.
+
+    Raises:
+        AppException: On DB update error.
+    """
     try:
         await db.execute(
             update(User)
@@ -73,22 +167,13 @@ async def update_user_secret_ref(
         )
 
 
-async def get_user_by_id(db: AsyncSession, user_id: UUID) -> User | None:
-    try:
-        result = await db.execute(
-            select(User).where(User.id == user_id)
-        )
-        return result.scalar_one_or_none()
-    except Exception as e:
-        raise AppException(
-            message=f"Failed to fetch user by ID {user_id}: {e}",
-            status_code=500,
-            public_message="Could not fetch user by ID.",
-            domain="auth"
-        )
-
-
 async def update_user_password(session: AsyncSession, user_id: UUID, hashed_password: str):
+    """
+    Change the password hash for a user.
+
+    Raises:
+        AppException: On DB failure.
+    """
     try:
         await session.execute(
             update(User)
@@ -104,23 +189,13 @@ async def update_user_password(session: AsyncSession, user_id: UUID, hashed_pass
         )
 
 
-async def update_last_login(session: AsyncSession, user_id: UUID):
-    try:
-        await session.execute(
-            update(User)
-            .where(User.id == user_id)
-            .values(last_login=datetime.now(timezone.utc))
-        )
-    except Exception as e:
-        raise AppException(
-            message=f"Failed to update last login for user {user_id}: {e}",
-            status_code=500,
-            public_message="Could not update last login.",
-            domain="auth"
-        )
-
-
 async def delete_user(session: AsyncSession, user_id: UUID) -> None:
+    """
+    Permanently delete a user by ID.
+
+    Raises:
+        AppException: On DB failure.
+    """
     try:
         await session.execute(
             delete(User).where(User.id == user_id)
@@ -130,18 +205,5 @@ async def delete_user(session: AsyncSession, user_id: UUID) -> None:
             message=f"Failed to delete user {user_id}: {e}",
             status_code=500,
             public_message="Could not delete user.",
-            domain="auth"
-        )
-
-
-async def get_all_users(session: AsyncSession) -> Sequence[User]:
-    try:
-        result = await session.execute(select(User))
-        return result.scalars().all()
-    except Exception as e:
-        raise AppException(
-            message=f"Failed to list all users: {e}",
-            status_code=500,
-            public_message="Could not retrieve users.",
             domain="auth"
         )

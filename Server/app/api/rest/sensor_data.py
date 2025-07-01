@@ -26,7 +26,17 @@ router = APIRouter(prefix="/sensor/data", tags=["Sensor Data"])
 
 # ──────────────── Public/Unauthenticated ───────────── #
 
-@router.post("/latest", response_model=List[SensorDataOut])
+@router.post(
+    "/latest",
+    response_model=List[SensorDataOut],
+    tags=["Sensor Data"],
+    summary="Get latest sensor readings",
+    description=f"""
+Returns the most recent data entries for each sensor in the list.
+This endpoint is publicly accessible (no authentication required).
+Rate limited: {settings.SENSOR_PUBLIC_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_PUBLIC_RATE_LIMIT)
 async def get_latest_sensor_data(request: Request, payload: SensorListInput):
     try:
@@ -40,7 +50,19 @@ async def get_latest_sensor_data(request: Request, payload: SensorListInput):
 
 # ──────────────── Sensor Querying ───────────────────── #
 
-@router.post("/by-ranges", response_model=PaginatedResponse[SensorDataPartialOut], response_model_exclude_none=True)
+@router.post(
+    "/by-ranges",
+    response_model=PaginatedResponse[SensorDataPartialOut],
+    response_model_exclude_none=True,
+    tags=["Sensor Data"],
+    summary="Query sensor data by field value ranges",
+    description=f"""
+Returns paginated sensor readings filtered by numeric [min, max] bounds for any field,
+Use `null` to represent infinity (i.e., no bound).
+Authentication is required via API Key.
+Rate limited: {settings.SENSOR_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_QUERY_RATE_LIMIT)
 async def get_sensor_data_by_ranges(request: Request, payload: SensorRangeQuery):
     try:
@@ -53,7 +75,19 @@ async def get_sensor_data_by_ranges(request: Request, payload: SensorRangeQuery)
 
 
 
-@router.post("/by-timestamps", response_model=PaginatedResponse)
+
+@router.post(
+    "/by-timestamps",
+    response_model=PaginatedResponse,
+    tags=["Sensor Data"],
+    summary="Query sensor data by timestamps",
+    description=f"""
+Returns paginated sensor readings that match either exact list of timestamps
+or fall within the inclusive time range if exact if false, must give only two timestamps.
+Authentication is required via API Key.
+Rate limited: {settings.SENSOR_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_QUERY_RATE_LIMIT)
 async def get_sensor_data_by_timestamps(request: Request, payload: SensorTimestampQuery):
     try:
@@ -66,7 +100,17 @@ async def get_sensor_data_by_timestamps(request: Request, payload: SensorTimesta
 
 
 
-@router.post("/by-sensor", response_model=PaginatedResponse[SensorDataOut])
+@router.post(
+    "/by-sensor",
+    response_model=PaginatedResponse[SensorDataOut],
+    tags=["Sensor Data"],
+    summary="Query sensor data by sensor UUID",
+    description=f"""
+Returns all readings from a specific sensor, paginated by timestamp.
+Authentication is required via API Key.
+Rate limited: {settings.SENSOR_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.SENSOR_QUERY_RATE_LIMIT)
 async def get_data_by_sensor(request: Request, payload: SensorQuery):
     try:
@@ -79,15 +123,3 @@ async def get_data_by_sensor(request: Request, payload: SensorQuery):
 
 
 
-# ──────────────── Sensor Data Ingestion ─────────────── #
-
-@router.post("/", response_model=SensorDataOut, status_code=201)
-@limiter.limit(settings.SENSOR_CREATE_RATE_LIMIT)
-async def add_sensor_data(request: Request, payload: SensorDataIn):
-    try:
-        result = await create_sensor_data_entry(payload)
-        logger.info("[SENSOR] Created sensor entry | sensor_id=%s | timestamp=%s", result.id, result.timestamp)
-        return result
-    except Exception as e:
-        logger.exception("[SENSOR] Failed to create sensor data entry | payload=%s", payload)
-        raise AppException.from_internal_error("Failed to store sensor data", domain="sensor")

@@ -5,8 +5,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.domain import sensor_logic
 from app.models.schemas.rest.sensor_schemas import SensorCreate, SensorUpdate, SensorOut
-from app.models.schemas.webhook.sensor_created import SensorCreatedPayload
-from app.models.schemas.webhook.webhook_schema import SensorDeletedPayload
+from app.models.schemas.webhook.webhook_schema import SensorDeletedPayload,SensorCreatedPayload
 from app.models.schemas.graphQL.sensor_meta_data_query import SensorMetadataQuery
 from app.constants.webhooks import WebhookEvent
 from app.utils.exceptions_base import SensorNotFoundError
@@ -106,7 +105,7 @@ async def test_update_sensor_success(mock_dispatch, mock_modify):
     )
     mock_modify.return_value = mock_sensor.model_dump()
 
-    result = await sensor_logic.update_sensor(sid, SensorUpdate(is_active=True))
+    result = await sensor_logic.update_sensor(sid, SensorUpdate(is_active=True)) # type: ignore
     assert isinstance(result, SensorOut)
     mock_dispatch.assert_awaited_once_with(WebhookEvent.SENSOR_STATUS_CHANGED, result)
 
@@ -116,7 +115,7 @@ async def test_update_sensor_success(mock_dispatch, mock_modify):
 async def test_update_sensor_not_found(mock_modify):
     mock_modify.return_value = None
     with pytest.raises(SensorNotFoundError):
-        await sensor_logic.update_sensor(uuid4(), SensorUpdate(is_active=True))
+        await sensor_logic.update_sensor(uuid4(), SensorUpdate(is_active=True)) # type: ignore
 
 
 @pytest.mark.asyncio

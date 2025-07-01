@@ -10,13 +10,22 @@ from loguru import logger
 T = TypeVar("T", bound=BaseModel)
 
 class PaginatedResponse(BaseModel, Generic[T]):
+    """
+    Generic paginated response model.
+
+    Attributes:
+        items (List[T]): List of returned items of type T.
+        total (int): Total number of records (unpaginated).
+        page (int): Current page number.
+        page_size (int): Number of items per page.
+    """
     items: List[T]
     total: int
     page: int
     page_size: int
 
     model_config = {
-        "from_attributes": True
+        "from_attributes": True  # Supports ORM or dict inputs
     }
 
 
@@ -26,19 +35,32 @@ async def paginate_query(
     page: int = 1,
     page_size: int | None = None
 ) -> PaginatedResponse[T]:
+    """
+    Execute and paginate any SQLAlchemy query.
+
+    Args:
+        base_query (Select): A SQLAlchemy select query.
+        schema (Type[T]): Pydantic model to validate and serialize each row.
+        page (int): Page number (1-based).
+        page_size (int | None): Number of items per page. Defaults to settings.DEFAULT_PAGE_SIZE.
+
+    Returns:
+        PaginatedResponse[T]: Paginated result set.
+    """
     page_size = page_size or settings.DEFAULT_PAGE_SIZE
     col_count = len(base_query._raw_columns)
 
     try:
         async with run_in_transaction() as session:
-            # Total count
+            # ── Get total count ──
             count_q = select(func.count()).select_from(base_query.subquery())
             total = await session.scalar(count_q) or 0
 
-            # Paged results
+            # ── Apply pagination ──
             paged = base_query.offset((page - 1) * page_size).limit(page_size)
             result = await session.execute(paged)
 
+            # ── Deserialize results ──
             if col_count == 1:
                 records = result.scalars().all()
                 items = [schema.model_validate(r) for r in records]

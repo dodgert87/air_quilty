@@ -19,7 +19,17 @@ router = APIRouter(
 
 # ──────────────── Query Endpoints ───────────── #
 
-@router.get("/", response_model=List[WebhookRead])
+@router.get(
+    "/",
+    response_model=List[WebhookRead],
+    tags=["Webhooks"],
+    summary="List all webhooks for the authenticated user",
+    description=f"""
+Returns all webhooks created by the authenticated user.
+Authentication required via JWT or API key.
+Rate limited: {settings.WEBHOOK_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.WEBHOOK_QUERY_RATE_LIMIT)
 async def get_user_webhooks_route(request: Request):
     try:
@@ -32,7 +42,17 @@ async def get_user_webhooks_route(request: Request):
 
 
 
-@router.get("/allowed-events", response_model=List[str])
+@router.get(
+    "/allowed-events",
+    response_model=List[str],
+    tags=["Webhooks"],
+    summary="List allowed webhook event types for the user role",
+    description=f"""
+Returns a list of event types the current user is allowed to subscribe to.
+Event availability depends on user role (e.g., admin vs authenticated).
+Rate limited: {settings.WEBHOOK_QUERY_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.WEBHOOK_QUERY_RATE_LIMIT)
 async def get_allowed_webhook_events_route(request: Request):
     try:
@@ -47,7 +67,19 @@ async def get_allowed_webhook_events_route(request: Request):
 
 # ──────────────── Mutation Endpoints ───────────── #
 
-@router.post("/", response_model=WebhookRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=WebhookRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Webhooks"],
+    summary="Create a new webhook subscription",
+    description=f"""
+Registers a new webhook subscription for the authenticated user.
+Accepts target URL, event type, and optional filters or headers.
+Authentication required.
+Rate limited: {settings.WEBHOOK_WRITE_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.WEBHOOK_WRITE_RATE_LIMIT)
 async def create_webhook_route(payload: WebhookCreate, request: Request):
     try:
@@ -64,7 +96,19 @@ async def create_webhook_route(payload: WebhookCreate, request: Request):
 
 
 
-@router.put("/", response_model=WebhookRead)
+
+@router.put(
+    "/",
+    response_model=WebhookRead,
+    tags=["Webhooks"],
+    summary="Update an existing webhook",
+    description=f"""
+Modifies an existing webhook owned by the user.
+You can update URL, event type, parameters, headers, or enabled status.
+Authentication required.
+Rate limited: {settings.WEBHOOK_WRITE_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.WEBHOOK_WRITE_RATE_LIMIT)
 async def update_webhook_route(request: Request, payload: WebhookUpdatePayload):
     try:
@@ -77,7 +121,18 @@ async def update_webhook_route(request: Request, payload: WebhookUpdatePayload):
 
 
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Webhooks"],
+    summary="Delete a webhook subscription",
+    description=f"""
+Deletes an existing webhook by ID.
+Only the owner of the webhook can delete it.
+Authentication required.
+Rate limited: {settings.WEBHOOK_WRITE_RATE_LIMIT}
+"""
+)
 @limiter.limit(settings.WEBHOOK_WRITE_RATE_LIMIT)
 async def delete_webhook_route(request: Request, payload: WebhookDeletePayload):
     try:
