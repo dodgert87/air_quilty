@@ -60,7 +60,6 @@ Each device generates a unique ID on first startup (stored in non-volatile memor
 
 The backend is containerized and can be started via Docker Compose:
 
-```bash
 cp .env.template .env
 docker compose up --build
 
