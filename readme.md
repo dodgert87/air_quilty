@@ -15,6 +15,7 @@ This project is a Wi-Fi connected air quality monitoring system based on the Ard
 ### Backend (VM server 172.16.7.177)
 - MQTT Listener and processing pipeline
 - REST and GraphQL APIs (FastAPI)
+- GraphQL endpoint for Flexible query
 - PostgreSQL database (async access)
 - Role-based authentication (JWT, API key)
 - Webhook system for event notifications
