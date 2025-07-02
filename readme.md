@@ -79,7 +79,7 @@ docker compose up --build
 
 Detailed backend documentation is available in the project wiki:
 
-- [Getting Started](./Getting-Started)
+- [Getting Started](./-/wikis/Getting-Started)
 - [Architecture](./-/wikis/Architecture)
 - [Database Schema](./-/wikis/Database-Schema)
 - [Testing & Debugging](./-/wikis/Testing-&-Debugging)
