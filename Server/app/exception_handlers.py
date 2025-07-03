@@ -4,20 +4,14 @@ from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.utils.exceptions_base import AppException
-from app.models.DB_tables.rest_logs import LogDomain
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY, HTTP_500_INTERNAL_SERVER_ERROR
 from loguru import logger
 
 
 
 async def app_exception_handler(request: Request, exc: AppException):
-    try:
-        domain = LogDomain(exc.domain)
-    except ValueError:
-        domain = LogDomain.OTHER
 
-    # Log the internal error details (visible only to developers)
-    logger.error(f"[{domain.value}] AppException: {exc.internal_message}")
+
 
     return JSONResponse(
         status_code=exc.status_code,
