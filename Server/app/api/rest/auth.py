@@ -62,12 +62,16 @@ async def login(request: Request, payload: LoginRequest):
         response = await login_user(payload.email, payload.password)
         logger.info("[AUTH] Login successful | email=%s", payload.email)
         return response
-    except AuthValidationError:
-        raise  # Custom error for invalid credentials
-    except Exception as e:
-        logger.exception("[AUTH] Login failed | email=%s", payload.email)
-        raise AppException.from_internal_error("Login failed", domain="auth")
 
+    except AppException as ae:
+        # Let custom AppExceptions (e.g., AuthValidationError) through as-is
+        logger.warning("[AUTH] %s | email=%s", ae.message, payload.email)
+        raise ae
+
+    except Exception as e:
+        # Unexpected error — log and return generic error
+        logger.exception("[AUTH] Unexpected error during login | email=%s", payload.email)
+        raise AppException.from_internal_error("Login failed", domain="auth")
 
 # ────────────────────────────────────────────────────────
 # PASSWORD CHANGE ENDPOINT
@@ -114,9 +118,15 @@ async def change_password(payload: ChangePasswordRequest, request: Request):
         APIKeyAuthProcessor.invalidate_user(user.id)
         logger.info("[AUTH] Password changed | user=%s", user.id)
         return {"message": "Password updated successfully"}
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s", ae.message, user.id)
+        raise ae
+
     except Exception as e:
-        logger.exception("[AUTH] Failed to change password | user=%s", user.id)
+        logger.exception("[AUTH] Unexpected error during password change | user=%s", user.id)
         raise AppException.from_internal_error("Failed to change password", domain="auth")
+
 
 # ────────────────────────────────────────────────────────
 # TEST AUTHENTICATION ENDPOINT
@@ -152,7 +162,10 @@ async def test_auth(request: Request):
             "role": user.role,
             "email": user.email
         }
-    except Exception as e:
+    except AppException as ae:
+        logger.warning("[AUTH] %s", ae.message)
+        raise ae
+    except Exception:
         logger.exception("[AUTH] Failed during auth test")
         raise AppException.from_internal_error("Failed to verify authentication", domain="auth")
 
@@ -184,7 +197,10 @@ async def onboard_users(request: Request, payload: UserOnboardRequest):
         result = await onboard_users_from_inputs(payload.users)
         logger.info("[ADMIN] Onboarded users | count=%d", len(payload.users))
         return result
-    except Exception as e:
+    except AppException as ae:
+        logger.warning("[ADMIN] %s | payload=%s", ae.message, payload)
+        raise ae
+    except Exception:
         logger.exception("[ADMIN] Failed to onboard users | payload=%s", payload)
         raise AppException.from_internal_error("Failed to onboard users", domain="auth")
 
@@ -202,7 +218,14 @@ rate-limited {settings.ADMIN_AUTH_RATE_LIMIT}.
 )
 @limiter.limit(settings.ADMIN_AUTH_RATE_LIMIT)
 async def list_all_users(request: Request):
-    return await get_all_users()
+    try:
+        return await get_all_users()
+    except AppException as ae:
+        logger.warning("[ADMIN] %s", ae.message)
+        raise ae
+    except Exception:
+        logger.exception("[ADMIN] Failed to list users")
+        raise AppException.from_internal_error("Failed to list users", domain="auth")
 
 
 @router.post(
@@ -225,9 +248,10 @@ async def find_user_endpoint(request: Request, payload: UserLookupPayload):
             raise AuthValidationError("User not found")
         logger.info("[ADMIN] Found user | identifier=%s", payload)
         return user
-    except AuthValidationError:
-        raise  # Let this bubble up unchanged
-    except Exception as e:
+    except AppException as ae:
+        logger.warning("[ADMIN] %s | payload=%s", ae.message, payload)
+        raise ae
+    except Exception:
         logger.exception("[ADMIN] Failed to find user | payload=%s", payload)
         raise AppException.from_internal_error("Failed to find user", domain="auth")
 
@@ -249,7 +273,10 @@ async def delete_user(request: Request, payload: UserLookupPayload):
         email = await delete_user_by_identifier(payload.user_id, payload.email, payload.name)
         logger.info("[ADMIN] Deleted user | identifier=%s", email)
         return {"message": f"User {email} deleted successfully"}
-    except Exception as e:
+    except AppException as ae:
+        logger.warning("[ADMIN] %s | payload=%s", ae.message, payload)
+        raise ae
+    except Exception:
         logger.exception("[ADMIN] Failed to delete user | payload=%s", payload)
         raise AppException.from_internal_error("Failed to delete user", domain="auth")
 
@@ -287,6 +314,7 @@ async def generate_api_key(request: Request, body: APIKeyRequest):
 
     try:
         key_obj = await generate_api_key_for_user(user.id, label=body.label)
+
         APIKeyAuthProcessor.add(APIKeyConfig(
             user_id=user.id,
             key=key_obj.hashed_key,
@@ -300,7 +328,12 @@ async def generate_api_key(request: Request, body: APIKeyRequest):
             "label": body.label or "default",
             "note": "Store this securely. It won't be shown again."
         }
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | label=%s", ae.message, user.id, body.label)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to generate API key | user=%s | label=%s", user.id, body.label)
         raise AppException.from_internal_error("Failed to generate API key", domain="auth")
 
@@ -336,7 +369,12 @@ async def delete_api_key(request: Request, payload: APIKeyDeleteRequest):
         logger.info("[AUTH] Deleted API key | user=%s | label=%s", user.id, payload.label)
 
         return {"message": f"API key with label '{payload.label}' has been deleted."}
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | label=%s", ae.message, user.id, payload.label)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to delete API key | user=%s | label=%s", user.id, payload.label)
         raise AppException.from_internal_error("Failed to delete API key", domain="auth")
 
@@ -365,7 +403,12 @@ async def get_user_profile(request: Request):
         profile = await get_user_profile_data(user.id)
         logger.info("[AUTH] Retrieved profile | user=%s", user.id)
         return profile
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s", ae.message, user.id)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to retrieve profile | user=%s", user.id)
         raise AppException.from_internal_error("Failed to retrieve user profile", domain="auth")
 
@@ -392,7 +435,12 @@ async def get_user_secret_info(request: Request, payload: SecretLabelQuery):
         secrets = await get_secret_info_for_user(user.id, is_active=payload.is_active)
         logger.info("[AUTH] Retrieved secrets | user=%s | active=%s | count=%d", user.id, payload.is_active, len(secrets))
         return secrets
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | active=%s", ae.message, user.id, payload.is_active)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to retrieve secrets | user=%s | active=%s", user.id, payload.is_active)
         raise AppException.from_internal_error("Failed to retrieve secret info", domain="auth")
 
@@ -417,9 +465,16 @@ async def create_user_secret_endpoint(request: Request, payload: SecretCreateReq
         raise AuthValidationError("Authentication required")
 
     try:
-        return await create_secret_for_user(user.id, payload)
-    except Exception as e:
-        logger.exception("[AUTH] Failed to create secret for user %s | payload=%s", user.id, payload)
+        secret = await create_secret_for_user(user.id, payload)
+        logger.info("[AUTH] Created secret | user=%s | label=%s", user.id, payload.label)
+        return secret
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | payload=%s", ae.message, user.id, payload)
+        raise ae
+
+    except Exception:
+        logger.exception("[AUTH] Failed to create secret | user=%s | payload=%s", user.id, payload)
         raise AppException.from_internal_error("Secret creation failed", domain="auth")
 
 
@@ -444,7 +499,12 @@ async def delete_secret(request: Request, payload: SecretLabelPayload):
         label = await delete_secret_by_label(user.id, payload.label)
         logger.info("[AUTH] Deleted secret | user=%s | label=%s", user.id, label)
         return {"message": f"Secret with label '{label}' has been deleted."}
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | label=%s", ae.message, user.id, payload.label)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to delete secret | user=%s | label=%s", user.id, payload.label)
         raise AppException.from_internal_error("Failed to delete secret", domain="auth")
 
@@ -472,6 +532,11 @@ async def toggle_secret(request: Request, payload: SecretTogglePayload):
         state = "activated" if payload.is_active else "deactivated"
         logger.info("[AUTH] Toggled secret | user=%s | label=%s | new_state=%s", user.id, label, state)
         return {"message": f"Secret with label '{label}' has been {state}."}
-    except Exception as e:
+
+    except AppException as ae:
+        logger.warning("[AUTH] %s | user=%s | label=%s", ae.message, user.id, payload.label)
+        raise ae
+
+    except Exception:
         logger.exception("[AUTH] Failed to toggle secret | user=%s | label=%s", user.id, payload.label)
         raise AppException.from_internal_error("Failed to toggle secret", domain="auth")

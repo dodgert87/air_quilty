@@ -181,8 +181,8 @@ async def listen_to_mqtt() -> None:
 
         except MqttError as conn_error:
             mqtt_state.is_running = False
-            logger.warning("[MQTT] Connection error: %s | Reconnecting in 5s…", str(conn_error))
-            await asyncio.sleep(5)
+            logger.warning(f"[MQTT] Connection error: %s | Reconnecting in {settings.MQTT_RECONNECT_TIMER}s…", str(conn_error))
+            await asyncio.sleep(settings.MQTT_RECONNECT_TIMER)
 
         except asyncio.CancelledError:
             mqtt_state.is_running = False

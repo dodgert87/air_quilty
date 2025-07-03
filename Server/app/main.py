@@ -27,6 +27,9 @@ from app.api.rest.router import router as rest_router
 from app.api.graphql.router import graphql_router
 from app.api.webhook.router import router as webhook_router
 from app.domain.webhooks.dispatcher import dispatcher
+from app.api.graphql.router import router as gql_router
+
+
 
 from app.domain.logging.logging_config import setup_logger
 from loguru import logger
@@ -69,7 +72,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler) # type
 versioned_router = APIRouter(prefix=api_prefix)
 versioned_router.include_router(rest_router)
 versioned_router.include_router(webhook_router)
-versioned_router.include_router(graphql_router, prefix="/sensor/data/graphql")
+versioned_router.include_router(gql_router)
 app.include_router(versioned_router)
 
 # ─── Custom Exception Handlers ───────────────────────────────

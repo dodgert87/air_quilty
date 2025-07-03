@@ -62,8 +62,6 @@ class Query:
         Returns:
             PaginatedSensorData (GraphQL type) with list of SensorData items
         """
-        request = info.context["request"]
-        await limiter.limit(settings.GRAPHQL_DATA_QUERY_LIMIT)(request)
 
         try:
             logger.info("[GraphQL] sensor_data called | filters=%s", filters)
@@ -108,8 +106,6 @@ class Query:
         Returns:
             PaginatedSensorMetadata (GraphQL type) with Sensor entries
         """
-        request = info.context["request"]
-        await limiter.limit(settings.GRAPHQL_META_QUERY_LIMIT)(request)
 
         try:
             logger.info("[GraphQL] sensor_metadata called | filters=%s", filters)

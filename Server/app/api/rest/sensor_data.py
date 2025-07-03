@@ -43,8 +43,11 @@ async def get_latest_sensor_data(request: Request, payload: SensorListInput):
         result = await get_latest_entries_for_sensors(payload.sensor_ids)
         logger.info("[SENSOR] Fetched latest entries | count=%d", len(result))
         return result
+    except AppException as ae:
+        logger.warning("[SENSOR] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
-        logger.exception("[SENSOR] Failed to fetch latest sensor entries | sensor_ids=%s", payload.sensor_ids)
+        logger.exception("[SENSOR] Failed to fetch latest sensor entries | payload=%s", payload)
         raise AppException.from_internal_error("Failed to fetch latest sensor data", domain="sensor")
 
 
@@ -69,11 +72,12 @@ async def get_sensor_data_by_ranges(request: Request, payload: SensorRangeQuery)
         result = await query_sensor_data_by_ranges(payload)
         logger.info("[SENSOR] Range query | total=%d | page=%d", result.total, result.page)
         return result
+    except AppException as ae:
+        logger.warning("[SENSOR] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
         logger.exception("[SENSOR] Range query failed | payload=%s", payload)
         raise AppException.from_internal_error("Failed to query sensor data by range", domain="sensor")
-
-
 
 
 @router.post(
@@ -83,7 +87,7 @@ async def get_sensor_data_by_ranges(request: Request, payload: SensorRangeQuery)
     summary="Query sensor data by timestamps",
     description=f"""
 Returns paginated sensor readings that match either exact list of timestamps
-or fall within the inclusive time range if exact if false, must give only two timestamps.
+or fall within the inclusive time range if exact is false. Must give only two timestamps.
 Authentication is required via API Key.
 Rate limited: {settings.SENSOR_QUERY_RATE_LIMIT}
 """
@@ -94,10 +98,12 @@ async def get_sensor_data_by_timestamps(request: Request, payload: SensorTimesta
         result = await query_sensor_data_by_timestamps(payload)
         logger.info("[SENSOR] Timestamp query | total=%d | page=%d", result.total, result.page)
         return result
+    except AppException as ae:
+        logger.warning("[SENSOR] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
         logger.exception("[SENSOR] Timestamp query failed | payload=%s", payload)
         raise AppException.from_internal_error("Failed to query sensor data by timestamps", domain="sensor")
-
 
 
 @router.post(
@@ -117,9 +123,9 @@ async def get_data_by_sensor(request: Request, payload: SensorQuery):
         result = await get_all_data_by_sensor(payload)
         logger.info("[SENSOR] Sensor data fetch | sensor_id=%s | total=%d", payload.sensor_id, result.total)
         return result
+    except AppException as ae:
+        logger.warning("[SENSOR] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
-        logger.exception("[SENSOR] Sensor fetch failed | payload=%s", payload)
+        logger.exception("[SENSOR] Unexpected error during sensor fetch | payload=%s", payload)
         raise AppException.from_internal_error("Failed to fetch sensor data", domain="sensor")
-
-
-

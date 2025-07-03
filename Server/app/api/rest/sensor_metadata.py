@@ -34,10 +34,12 @@ async def get_sensor(request: Request, payload: SensorIdPayload):
         sensor = await get_sensor_by_id(payload.sensor_id)
         logger.info("[SENSOR_META] Retrieved sensor | id=%s", payload.sensor_id)
         return sensor
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
-        logger.exception("[SENSOR_META] Failed to fetch sensor | id=%s", payload.sensor_id)
+        logger.exception("[SENSOR_META] Failed to fetch sensor | payload=%s", payload)
         raise AppException.from_internal_error("Failed to find sensor", domain="sensor")
-
 
 
 @router.get(
@@ -57,10 +59,12 @@ async def list_all_sensors(request: Request):
         sensors = await list_sensors()
         logger.info("[SENSOR_META] Listed all sensors | count=%d", len(sensors))
         return sensors
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s", ae.message)
+        raise ae
     except Exception as e:
         logger.exception("[SENSOR_META] Failed to list sensors")
         raise AppException.from_internal_error("Failed to list all sensors", domain="sensor")
-
 
 
 @router.get(
@@ -80,10 +84,12 @@ async def list_unregistered_sensors(request: Request):
         sensors = await list_sensors_with_placeholder()
         logger.info("[SENSOR_META] Listed unregistered sensors | count=%d", len(sensors))
         return sensors
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s", ae.message)
+        raise ae
     except Exception as e:
         logger.exception("[SENSOR_META] Failed to list unregistered sensors")
         raise AppException.from_internal_error("Failed to list unregistered sensors", domain="sensor")
-
 
 
 # ──────────────── Admin/Write Endpoints ───────────── #
@@ -105,10 +111,12 @@ async def update_sensor_entry(request: Request, payload: SensorUpdatePayload):
         updated = await update_sensor(payload.sensor_id, payload.update)
         logger.info("[SENSOR_META] Updated sensor | id=%s", payload.sensor_id)
         return updated
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
-        logger.exception("[SENSOR_META] Failed to update sensor | id=%s", payload.sensor_id)
+        logger.exception("[SENSOR_META] Failed to update sensor | payload=%s", payload)
         raise AppException.from_internal_error("Failed to update sensor metadata", domain="sensor")
-
 
 
 @router.delete(
@@ -127,10 +135,12 @@ async def delete_sensor_entry(request: Request, payload: SensorIdPayload):
     try:
         await delete_sensor(payload.sensor_id)
         logger.info("[SENSOR_META] Deleted sensor | id=%s", payload.sensor_id)
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s | payload=%s", ae.message, payload)
+        raise ae
     except Exception as e:
-        logger.exception("[SENSOR_META] Failed to delete sensor | id=%s", payload.sensor_id)
+        logger.exception("[SENSOR_META] Failed to delete sensor | payload=%s", payload)
         raise AppException.from_internal_error("Failed to delete sensor", domain="sensor")
-
 
 
 # ──────────────── System Monitoring ───────────────── #
@@ -157,7 +167,9 @@ async def get_mqtt_listener_status(request: Request):
                 "message_count": mqtt_state.message_count
             }
         )
+    except AppException as ae:
+        logger.warning("[SENSOR_META] %s", ae.message)
+        raise ae
     except Exception as e:
         logger.exception("[SENSOR_META] Failed to retrieve MQTT status")
         raise AppException.from_internal_error("Failed to retrieve MQTT listener status", domain="sensor")
-
