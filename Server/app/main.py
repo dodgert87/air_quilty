@@ -100,6 +100,8 @@ ABOUT = (
     f"Version   : {getattr(settings, 'VERSION', 'development')}\n\n"
     f"REST docs   : /docs\n"
     f"Dash board   : /dashboard/page1\n"
+    f"GraphQL docs API  : /api/{settings.API_VERSION}/sensor/data/graphql\n"
+    f"GraphQL docs Meta : /api/{settings.API_VERSION}/sensor/meta/graphql\n"
     f"Project docs: GitLab Wiki (https://gitlab.tamk.cloud/tamk-projects/summer-projects/2025/036-a3-air-quality.git)\n"
     f"Send a bug report: abdenour.abdelaziz@tuni.fi\n"
     f"{'-'*55}\n"
