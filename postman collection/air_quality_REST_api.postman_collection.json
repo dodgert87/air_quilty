@@ -1,0 +1,1333 @@
+{
+	"info": {
+		"_postman_id": "76aef282-b868-44de-b63e-23d5c49db650",
+		"name": "air_quality_api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "31071550"
+	},
+	"item": [
+		{
+			"name": "sensor metadata",
+			"item": [
+				{
+					"name": "create new sensor",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "g8lpSYClQfZ6C4YrixCmvco0o1oceJ-Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sensor_id\":\"e1ca483b-60ca-4b95-b498-afd3617d3a72\",\r\n  \"name\": \"loung Room Sensor\",\r\n  \"location\": \"Floor 1 - main Room\",\r\n  \"model\": \"AQ-SR-9000\",\r\n  \"is_active\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/admin",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"metadata",
+								"admin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all sensors metadata",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "VydSoRhvYD36zpatXvErsDgI0qvYFCdG",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"metadata",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get sensor by id ",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "g8lpSYClQfZ6C4YrixCmvco0o1oceJ-Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sensor_id\": \"e1ca483b-60ca-4b95-b498-afd3617d6a31\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/find",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"metadata",
+								"find"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete sensor by id ",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "g8lpSYClQfZ6C4YrixCmvco0o1oceJ-Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sensor_id\": \"e1ca483b-60ca-4b95-b498-afd3617d6a31\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/admin",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"metadata",
+								"admin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update sensor by id ",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "VydSoRhvYD36zpatXvErsDgI0qvYFCdG",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sensor_id\": \"7f34dd9f-44bc-4163-aef2-a6b44fc2da98\",\r\n  \"update\": {\r\n    \"location\": \"Floor 2 - Lab c\",\r\n    \"model\": \"AQ-LB-8500\",\r\n    \"is_active\": true\r\n  }\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/admin/update",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"metadata",
+								"admin",
+								"update"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "sensor data",
+			"item": [
+				{
+					"name": "fetch sensor data by param and or by-ranges",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "qIDIwpfQPs-CytPIVBHts3myx-wxZn3b",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"page\": 2,\r\n  \"ranges\": {\r\n    \"temperature\": [null, null],\r\n    \"humidity\":[null, null]\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/data/by-ranges",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"data",
+								"by-ranges"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get latest by sensor ids or all latest ",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "i89fvjaenG_7Kjn1dhdAQLl2ddZFbVxt",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/data/latest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"data",
+								"latest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get data by list time stamp, exact or range",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "25Yz8XCOIVXIaYHLBTg5I-VgFidKndb7",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"timestamps\": [\"2025-06-10T00:00:00Z\",\"2025-06-20T00:00:00Z\"],\r\n  \"exact\": false,\r\n  \"page\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/data/by-timestamps",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"data",
+								"by-timestamps"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get sensor data by sensor",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "g8lpSYClQfZ6C4YrixCmvco0o1oceJ-Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-API-Key",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sensor_id\": \"e1ca483b-60ca-4b95-b498-afd3617d3a72\",\r\n  \"page\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/sensor/data/by-sensor",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"sensor",
+								"data",
+								"by-sensor"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "user profile",
+			"item": [
+				{
+					"name": "add new users ",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAyNTI0MDUsIm5iZiI6MTc1MDI1MjQwNSwiZXhwIjoxNzUwMjU2MDA1fQ.KfHdO9d9B7SHCslmrSdbaY_CTLUKDNavsZZpRrC1SZQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"users\": [\r\n    { \"name\": \"Alice Smith\", \"role\": \"authenticated\" },\r\n    { \"name\": \"John Doe\", \"role\": \"developer\" },\r\n    { \"name\": \"Emma Jones\", \"role\": \"guest\" }\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/admin/onboard-users",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"admin",
+								"onboard-users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update user password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZDdlOWUxNy1mMzU0LTQzNWUtOTk0MS01NTdlYjI2MzA0NWQiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTA3Nzk5NDcsIm5iZiI6MTc1MDc3OTk0NywiZXhwIjoxNzUwNzgzNTQ3fQ.ScmXrvumnX3bfpqi4LVmExeZ3G9yVFuI-TkgxruTf50",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"old_password\": \"SecureStart!23\",\r\n  \"new_password\": \"ChangeMe123!\",\r\n  \"label\": \"example-label\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/change-password",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"change-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user profile data",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MmI3Mjk2NS1jZTFkLTQwZDMtOWYxZi0zODY3ZTE5YjVkODgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTEwNDkxOTksIm5iZiI6MTc1MTA0OTE5OSwiZXhwIjoxNzUxMDUyNzk5fQ.-apYVo2M1tjgsC8gV2J7YW8tWraz3YBtsNmXfDGeId0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/profile",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all user/ admin access only",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAyNTI0MDUsIm5iZiI6MTc1MDI1MjQwNSwiZXhwIjoxNzUwMjU2MDA1fQ.KfHdO9d9B7SHCslmrSdbaY_CTLUKDNavsZZpRrC1SZQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/admin/all-users",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"admin",
+								"all-users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user by name/id/email /admin access only",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDk0OTI5NDUsIm5iZiI6MTc0OTQ5Mjk0NSwiZXhwIjoxNzQ5NDk2NTQ1fQ._8NWgRAj2_YzlLBhcsmEpw2196aDOmVAAYMMaOV4Dmg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user_id\": \"ee017e03-72a2-42e5-99d9-24149c7c4fc8\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/admin/find-user",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"admin",
+								"find-user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete user by name/id/email /admin access only ",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDk0OTI5NDUsIm5iZiI6MTc0OTQ5Mjk0NSwiZXhwIjoxNzQ5NDk2NTQ1fQ._8NWgRAj2_YzlLBhcsmEpw2196aDOmVAAYMMaOV4Dmg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user_id\": \"ee017e03-72a2-42e5-99d9-24149c7c4fc8\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/admin/delete-user",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"admin",
+								"delete-user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user secret-info",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAxODg5NTksIm5iZiI6MTc1MDE4ODk1OSwiZXhwIjoxNzUwMTkyNTU5fQ.XPaLoo9qG2xu4hHv1exni75vuFHKVx0rym6A601RFXw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/secret-info",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"secret-info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create secret one time see only",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZDdlOWUxNy1mMzU0LTQzNWUtOTk0MS01NTdlYjI2MzA0NWQiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTA1MDg2MjcsIm5iZiI6MTc1MDUwODYyNywiZXhwIjoxNzUwNTEyMjI3fQ.9UCVBv8ox9j5t0IiEmM-3t_SSKFmyS7jXhchEOjRcMo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"label\": \"webhook-signing-key\",\r\n  \"expires_at\": \"2026-01-01T00:00:00Z\",\r\n  \"is_active\": true\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/create-secret",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"create-secret"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "toggle secret by label",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAxODg5NTksIm5iZiI6MTc1MDE4ODk1OSwiZXhwIjoxNzUwMTkyNTU5fQ.XPaLoo9qG2xu4hHv1exni75vuFHKVx0rym6A601RFXw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"label\": \"webhook-signing-key\",\r\n  \"is_active\": true\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/toggle-secret",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"toggle-secret"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete secret by label",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAxODg5NTksIm5iZiI6MTc1MDE4ODk1OSwiZXhwIjoxNzUwMTkyNTU5fQ.XPaLoo9qG2xu4hHv1exni75vuFHKVx0rym6A601RFXw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"label\": \"webhook-signing-key\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/delete-secret",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"delete-secret"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "user login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"admin@airquality.fi\",\r\n  \"password\": \"SecureStart!23\"  \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/login",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "test-auth JWT key",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MmI3Mjk2NS1jZTFkLTQwZDMtOWYxZi0zODY3ZTE5YjVkODgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTE1NzQ0MjUsIm5iZiI6MTc1MTU3NDQyNSwiZXhwIjoxNzUxNTc4MDI1fQ._FJX-3a8eJZqo5wQ72sjVniWcw-OSOg9Cuv6ABddLQI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZWU3MzVmNS1lY2I3LTQ3MjEtYTY3NC0xNzgwNDQ3ZmE3N2IiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImV4cCI6MTc0OTA2MDU5N30.MzzrmtuDcYQf66Y7_Slj-PsXybNnPIrN_Xmpd0gl85E",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/test-auth",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"test-auth"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "generate-api-key",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MmI3Mjk2NS1jZTFkLTQwZDMtOWYxZi0zODY3ZTE5YjVkODgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTEwNDkxOTksIm5iZiI6MTc1MTA0OTE5OSwiZXhwIjoxNzUxMDUyNzk5fQ.-apYVo2M1tjgsC8gV2J7YW8tWraz3YBtsNmXfDGeId0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"label\": \"test2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/generate-api-key",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"generate-api-key"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete api key by label",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MmI3Mjk2NS1jZTFkLTQwZDMtOWYxZi0zODY3ZTE5YjVkODgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTEwNDkxOTksIm5iZiI6MTc1MTA0OTE5OSwiZXhwIjoxNzUxMDUyNzk5fQ.-apYVo2M1tjgsC8gV2J7YW8tWraz3YBtsNmXfDGeId0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"label\": \"test2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/delete-api-key",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"delete-api-key"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "webhooks",
+			"item": [
+				{
+					"name": "create  webhook",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZDdlOWUxNy1mMzU0LTQzNWUtOTk0MS01NTdlYjI2MzA0NWQiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTA1Mzk4MTgsIm5iZiI6MTc1MDUzOTgxOCwiZXhwIjoxNzUwNTQzNDE4fQ.iHnTaAVHgku8DWTzfwBvIMFvWIAgEf86Y-fXZp5y66c",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"event_type\": \"alert_triggered\",\r\n  \"target_url\": \"http://localhost:8001/webhook\",\r\n  \"secret_label\": \"webhook-signing-key\",\r\n  \"custom_headers\": {\r\n    \"X-App\": \"example\"\r\n  },\r\n  \"parameters\": {\r\n    \"temperature\": [null, 40]\r\n  }\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/webhooks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get allowed event",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAxODUyNTUsIm5iZiI6MTc1MDE4NTI1NSwiZXhwIjoxNzUwMTg4ODU1fQ.wDgkQ-I9sG_aJFw6idtZ9OnVnbzP4y7XcVkVfyXJ6DE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/webhooks/allowed-events",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"webhooks",
+								"allowed-events"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user webhooks",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZDdlOWUxNy1mMzU0LTQzNWUtOTk0MS01NTdlYjI2MzA0NWQiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTA1MTI0NDYsIm5iZiI6MTc1MDUxMjQ0NiwiZXhwIjoxNzUwNTE2MDQ2fQ.AGwc5O-EFKUs8sLoTAgP5hDQOv0GllcxTAuABtHFINk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/webhooks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete webhook by id ",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MTI4YjdmMy0wNDRhLTRiM2EtYjU4ZC1mMWYxMjUyOWM1OTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTAxODg5NTksIm5iZiI6MTc1MDE4ODk1OSwiZXhwIjoxNzUwMTkyNTU5fQ.XPaLoo9qG2xu4hHv1exni75vuFHKVx0rym6A601RFXw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"webhook_id\": \"1219269e-3ad6-4dc5-94b2-0b2600b11e35\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/webhooks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update webhook by id ",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZDdlOWUxNy1mMzU0LTQzNWUtOTk0MS01NTdlYjI2MzA0NWQiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTA1Mzk4MTgsIm5iZiI6MTc1MDUzOTgxOCwiZXhwIjoxNzUwNTQzNDE4fQ.iHnTaAVHgku8DWTzfwBvIMFvWIAgEf86Y-fXZp5y66c",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"webhook_id\": \"a0411ffb-af9b-4a9f-928b-a0816bcafacb\",\r\n  \"target_url\": \"http://localhost:8001/webhook\",\r\n  \"secret_label\": \"webhook-signing-key\",\r\n  \"enabled\": true,\r\n  \"custom_headers\": {\r\n    \"X-App\": \"triger for high temp\"\r\n  },\r\n  \"parameters\": {\r\n    \"temperature\": [null, 40]\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/v1/auth/webhooks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "mqtt broker/listener status ",
+			"request": {
+				"auth": {
+					"type": "apikey",
+					"apikey": [
+						{
+							"key": "value",
+							"value": "g8lpSYClQfZ6C4YrixCmvco0o1oceJ-Q",
+							"type": "string"
+						},
+						{
+							"key": "key",
+							"value": "X-API-Key",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/v1/sensor/metadata/mqtt-status",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"v1",
+						"sensor",
+						"metadata",
+						"mqtt-status"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

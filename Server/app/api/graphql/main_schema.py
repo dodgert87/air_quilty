@@ -1,6 +1,7 @@
 import strawberry
 
 
+from app.utils.exceptions_base import AppException
 from app.utils.mappers import (
     map_graphql_to_pydantic_metadata_query,
     map_graphql_to_pydantic_sensor_data_query
@@ -23,26 +24,15 @@ from app.domain.sensor_logic import (
 from app.models.schemas.rest.sensor_schemas import SensorOut
 
 
+
+# ------------------------------------------------------------------ sensor data
 @strawberry.type
-class Query:
-    """
-    Root GraphQL query resolver.
-
-    Contains:
-    - sensor_data(): Resolves historical sensor readings based on multiple filters
-    - sensor_metadata(): Resolves paginated sensor metadata records with filter support
-
-    These resolvers map GraphQL inputs to internal Pydantic models and use
-    domain logic to execute and paginate queries. Each route applies request-level
-    rate limiting using `slowapi` and logs both execution and failures.
-    """
-
-    @strawberry.field
+class QuerySensorData:
+    @strawberry.field(name="sensorData")
     async def sensor_data(
-        self,
-        filters: SensorDataQueryInput,
-        info
+        self, filters: SensorDataQueryInput, info
     ) -> PaginatedSensorData:
+
         """
         Resolve sensorData GraphQL query.
 
@@ -64,31 +54,31 @@ class Query:
         """
 
         try:
-            logger.info("[GraphQL] sensor_data called | filters=%s", filters)
+            logger.info("[GraphQL] sensor_data | %s", filters)
             pyd_query = map_graphql_to_pydantic_sensor_data_query(filters)
-            response = await query_sensor_data_advanced(pyd_query)
-
-            logger.info("[GraphQL] sensor_data succeeded | total=%d, items=%d", response.total, len(response.items))
-            items = [SensorData(**item.model_dump()) for item in response.items]
-
+            resp = await query_sensor_data_advanced(pyd_query)
+            items = [SensorData(**i.model_dump()) for i in resp.items]
             return PaginatedSensorData(
                 items=items,
-                total=response.total,
-                page=response.page,
-                page_size=response.page_size,
+                total=resp.total,
+                page=resp.page,
+                page_size=resp.page_size,
+            )
+        except Exception as e:
+            logger.exception("[GraphQL] sensor_data failed | %s", e)
+            raise AppException.from_internal_error(
+                "Sensor data query failed", domain="sensor"
             )
 
-        except Exception as e:
-            logger.exception("[GraphQL] sensor_data failed | filters=%s | error=%s", filters, str(e))
-            from app.utils.exceptions_base import AppException
-            raise AppException.from_internal_error("Sensor data query failed", domain="sensor")
 
-    @strawberry.field
+# ------------------------------------------------------------------ metadata
+@strawberry.type
+class QuerySensorMeta:
+    @strawberry.field(name="sensorMetadata")
     async def sensor_metadata(
-        self,
-        filters: SensorMetadataQueryInput,
-        info
+        self, filters: SensorMetadataQueryInput, info
     ) -> PaginatedSensorMetadata:
+
         """
         Resolve sensorMetadata GraphQL query.
 
@@ -106,27 +96,26 @@ class Query:
         Returns:
             PaginatedSensorMetadata (GraphQL type) with Sensor entries
         """
-
         try:
-            logger.info("[GraphQL] sensor_metadata called | filters=%s", filters)
+            logger.info("[GraphQL] sensor_metadata | %s", filters)
             pyd_query = map_graphql_to_pydantic_metadata_query(filters)
-            response = await query_sensor_metadata_advanced(pyd_query)
-
-            items = [Sensor(**SensorOut.model_validate(s).model_dump()) for s in response.items]
-            logger.info("[GraphQL] sensor_metadata succeeded | total=%d, items=%d", response.total, len(response.items))
-
+            resp = await query_sensor_metadata_advanced(pyd_query)
+            items = [
+                Sensor(**SensorOut.model_validate(s).model_dump())
+                for s in resp.items
+            ]
             return PaginatedSensorMetadata(
                 items=items,
-                total=response.total,
-                page=response.page,
-                page_size=response.page_size,
+                total=resp.total,
+                page=resp.page,
+                page_size=resp.page_size,
+            )
+        except Exception as e:
+            logger.exception("[GraphQL] sensor_metadata failed | %s", e)
+            raise AppException.from_internal_error(
+                "Sensor metadata query failed", domain="sensor"
             )
 
-        except Exception as e:
-            logger.exception("[GraphQL] sensor_metadata failed | filters=%s | error=%s", filters, str(e))
-            from app.utils.exceptions_base import AppException
-            raise AppException.from_internal_error("Sensor metadata query failed", domain="sensor")
 
-
-# Final schema setup (exposed to ASGI app)
-schema = strawberry.Schema(query=Query)
+sensor_data_schema = strawberry.Schema(query=QuerySensorData)
+sensor_meta_schema = strawberry.Schema(query=QuerySensorMeta)

@@ -43,6 +43,13 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         if not path.startswith(f"/api/{settings.API_VERSION}/sensor"):
             return await call_next(request)
 
+        # Exempt GET requests to GraphQL IDE routes
+        if request.method == "GET" and path in {
+            f"/api/{settings.API_VERSION}/sensor/data/graphql",
+            f"/api/{settings.API_VERSION}/sensor/meta/graphql"
+        }:
+            return await call_next(request)
+
         # Extract API key from request header
         api_key = request.headers.get("X-API-Key")
         if not api_key:
